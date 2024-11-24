@@ -9,7 +9,7 @@ const nextConfig = {
   compiler: {
     removeConsole: false,
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     config.module.rules.push({
       test: /\.js$/,
       use: {
@@ -20,7 +20,6 @@ const nextConfig = {
         }
       }
     });
-    config.optimization.moduleIds = 'named'
     return config;
   }
 };

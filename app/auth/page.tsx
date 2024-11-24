@@ -14,6 +14,10 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
+import { cn } from "@/lib/utils";
+
+// Add JSX namespace import
+import type { JSX } from 'react';
 
 const authSchema = z.object({
   email: z.string()
@@ -26,7 +30,7 @@ const authSchema = z.object({
 
 type AuthFormData = z.infer<typeof authSchema>;
 
-export default function AuthPage() {
+export default function AuthPage(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -78,12 +82,12 @@ export default function AuthPage() {
     }
   };
 
-  const AuthForm = ({ isSignUp }: { isSignUp: boolean }) => (
+  const AuthForm = ({ isSignUp }: { isSignUp: boolean }): JSX.Element => (
     <form onSubmit={handleSubmit((data) => onSubmit(data, isSignUp))} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">College Email</Label>
+        <Label htmlFor={`email-${isSignUp ? 'signup' : 'signin'}`}>College Email</Label>
         <Input
-          id="email"
+          id={`email-${isSignUp ? 'signup' : 'signin'}`}
           type="email"
           placeholder="ap21@srmap.edu.in"
           {...register("email")}
@@ -94,9 +98,9 @@ export default function AuthPage() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor={`password-${isSignUp ? 'signup' : 'signin'}`}>Password</Label>
         <Input
-          id="password"
+          id={`password-${isSignUp ? 'signup' : 'signin'}`}
           type="password"
           {...register("password")}
         />
@@ -108,7 +112,7 @@ export default function AuthPage() {
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className={cn("mr-2 h-4 w-4 animate-spin")} />
             {isSignUp ? 'Creating Account' : 'Signing In'}
           </>
         ) : (
@@ -126,8 +130,8 @@ export default function AuthPage() {
           <p className="text-muted-foreground">Sign in to access your campus account</p>
         </div>
 
-        <Tabs defaultValue="signin" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="signin" className={cn("space-y-6")}>
+          <TabsList className={cn("grid w-full grid-cols-2")}>
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
@@ -152,7 +156,7 @@ export default function AuthPage() {
                 disabled={loading}
               >
                 {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className={cn("mr-2 h-4 w-4 animate-spin")} />
                 ) : (
                   'Sign in with Google'
                 )}
