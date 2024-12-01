@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import UpcomingEvents from '@/components/upcoming-events';
-import { BookOpen, Calendar, MapPin, Utensils, Users } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, Utensils, Users, Settings, User } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -8,32 +8,45 @@ const QuickLinks = [
   {
     icon: Calendar,
     title: 'Events',
-    description: 'Campus events and activities',
     href: '/events',
     color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
   },
   {
     icon: Utensils,
-    title: 'Mess Menu',
-    description: 'Daily meal schedules',
+    title: 'Mess',
     href: '/mess',
     color: 'bg-green-500/10 text-green-600 dark:text-green-400',
   },
   {
     icon: MapPin,
     title: 'Navigation',
-    description: 'Campus map and directions',
     href: '/navigation',
     color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
   },
   {
     icon: Users,
     title: 'Discover',
-    description: 'Connect with people',
     href: '/discover',
     color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
   },
+  {
+    icon: User,
+    title: 'Profile',
+    href: '/profile',
+    color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
+  },
+  {
+    icon: Settings,
+    title: 'Settings',
+    href: '/settings',
+    color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+  },
 ];
+
+export const metadata = {
+  title: 'SRM University AP',
+  description: 'Experience excellence in education at our state-of-the-art campus. Your journey to success begins here.',
+}
 
 export default function Home() {
   return (
@@ -59,23 +72,18 @@ export default function Home() {
         </div>
       </Card>
 
-      {/* Quick Links Grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Quick Links with consistent sizing */}
+      <div className="flex flex-wrap gap-4 justify-center">
         {QuickLinks.map((link) => (
           <Link key={link.title} href={link.href}>
-            <Card className="p-6 h-full hover:shadow-lg transition-all duration-200 group">
-              <div className="space-y-4">
-                <div className={`p-3 rounded-lg w-fit ${link.color}`}>
+            <Card className="group hover:shadow-lg transition-all duration-200 w-[100px]">
+              <div className="flex flex-col items-center p-4 h-[100px] justify-center">
+                <div className={`w-12 h-12 flex items-center justify-center rounded-lg ${link.color}`}>
                   <link.icon className="h-6 w-6" />
                 </div>
-                <div>
-                  <h3 className="font-semibold group-hover:text-primary transition-colors">
-                    {link.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {link.description}
-                  </p>
-                </div>
+                <span className="mt-2 text-sm font-medium group-hover:text-primary transition-colors text-center">
+                  {link.title}
+                </span>
               </div>
             </Card>
           </Link>
