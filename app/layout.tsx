@@ -4,7 +4,7 @@ import { Providers } from './providers';
 import Navbar from '@/components/navbar';
 import BottomNav from '@/components/bottom-nav';
 import { OfflineBanner } from '@/components/offline-banner';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { PWAPrompt } from '@/components/pwa-prompt';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -23,6 +23,14 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   });
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#0f172a',
+};
+
 export const metadata: Metadata = {
   title: {
     default: 'SRM AP Connect',
@@ -30,7 +38,6 @@ export const metadata: Metadata = {
   },
   description: 'Your complete campus companion for SRM University AP',
   manifest: '/manifest.json',
-  themeColor: '#0f172a',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -44,12 +51,6 @@ export const metadata: Metadata = {
     apple: [
       { url: '/icons/ios/180.png', sizes: '180x180' },
     ],
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
   },
 };
 
