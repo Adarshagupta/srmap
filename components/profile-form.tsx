@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from './auth-provider';
+import { useRouter } from 'next/navigation';
 
 interface ProfileFormData {
   name: string;
@@ -50,8 +51,10 @@ const initialFormData: ProfileFormData = {
 export default function ProfileForm() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>(initialFormData);
+  const [errors, setErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -75,6 +78,12 @@ export default function ProfileForm() {
             interests: Array.isArray(data.interests) ? data.interests.join(', ') : data.interests || '',
             bio: data.bio || '',
           });
+        } else {
+          // If no profile exists, set email from user
+          setFormData(prev => ({
+            ...prev,
+            email: user.email || '',
+          }));
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -91,19 +100,66 @@ export default function ProfileForm() {
     fetchProfile();
   }, [user, toast]);
 
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof ProfileFormData, string>> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+
+    if (!formData.regNumber.trim()) {
+      newErrors.regNumber = 'Registration number is required';
+    } else if (!/^AP\d{8}$/i.test(formData.regNumber)) {
+      newErrors.regNumber = 'Invalid registration number format (e.g., AP21110010)';
+    }
+
+    const batchYear = parseInt(formData.batch);
+    if (isNaN(batchYear) || batchYear < 2020 || batchYear > 2030) {
+      newErrors.batch = 'Batch year must be between 2020 and 2030';
+    }
+
+    if (!formData.year) {
+      newErrors.year = 'Year is required';
+    }
+
+    if (!formData.department) {
+      newErrors.department = 'Department is required';
+    }
+
+    if (!formData.dob) {
+      newErrors.dob = 'Date of birth is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (field: keyof ProfileFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when field is edited
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please check the form for errors",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       await setDoc(doc(db, 'users', user.uid), {
         ...formData,
-        interests: formData.interests.split(',').map(i => i.trim()),
+        interests: formData.interests.split(',').map(i => i.trim()).filter(Boolean),
         updatedAt: new Date().toISOString(),
       }, { merge: true });
 
@@ -111,6 +167,9 @@ export default function ProfileForm() {
         title: "Success",
         description: "Profile updated successfully",
       });
+
+      // Navigate back to profile page after successful update
+      router.push('/profile');
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -138,7 +197,11 @@ export default function ProfileForm() {
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
               required
+              className={errors.name ? 'border-destructive' : ''}
             />
+            {errors.name && (
+              <p className="text-sm text-destructive">{errors.name}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -157,9 +220,14 @@ export default function ProfileForm() {
             <Input
               id="regNumber"
               value={formData.regNumber}
-              onChange={(e) => handleChange('regNumber', e.target.value)}
+              onChange={(e) => handleChange('regNumber', e.target.value.toUpperCase())}
+              placeholder="AP21110010"
               required
+              className={errors.regNumber ? 'border-destructive' : ''}
             />
+            {errors.regNumber && (
+              <p className="text-sm text-destructive">{errors.regNumber}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -172,7 +240,11 @@ export default function ProfileForm() {
               value={formData.batch}
               onChange={(e) => handleChange('batch', e.target.value)}
               required
+              className={errors.batch ? 'border-destructive' : ''}
             />
+            {errors.batch && (
+              <p className="text-sm text-destructive">{errors.batch}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -181,7 +253,7 @@ export default function ProfileForm() {
               value={formData.year}
               onValueChange={(value) => handleChange('year', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={errors.year ? 'border-destructive' : ''}>
                 <SelectValue placeholder="Select year" />
               </SelectTrigger>
               <SelectContent>
@@ -192,6 +264,9 @@ export default function ProfileForm() {
                 ))}
               </SelectContent>
             </Select>
+            {errors.year && (
+              <p className="text-sm text-destructive">{errors.year}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -200,7 +275,7 @@ export default function ProfileForm() {
               value={formData.department}
               onValueChange={(value) => handleChange('department', value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={errors.department ? 'border-destructive' : ''}>
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
@@ -211,6 +286,9 @@ export default function ProfileForm() {
                 ))}
               </SelectContent>
             </Select>
+            {errors.department && (
+              <p className="text-sm text-destructive">{errors.department}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -221,7 +299,11 @@ export default function ProfileForm() {
               value={formData.dob}
               onChange={(e) => handleChange('dob', e.target.value)}
               required
+              className={errors.dob ? 'border-destructive' : ''}
             />
+            {errors.dob && (
+              <p className="text-sm text-destructive">{errors.dob}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -231,7 +313,6 @@ export default function ProfileForm() {
               placeholder="AI, Web Development, Robotics"
               value={formData.interests}
               onChange={(e) => handleChange('interests', e.target.value)}
-              required
             />
           </div>
         </div>
@@ -243,20 +324,31 @@ export default function ProfileForm() {
             className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background"
             value={formData.bio}
             onChange={(e) => handleChange('bio', e.target.value)}
-            required
+            placeholder="Tell us about yourself..."
           />
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Updating Profile
-            </>
-          ) : (
-            'Update Profile'
-          )}
-        </Button>
+        <div className="flex gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1"
+            onClick={() => router.back()}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" className="flex-1" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating Profile
+              </>
+            ) : (
+              'Update Profile'
+            )}
+          </Button>
+        </div>
       </form>
     </Card>
   );

@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import UpcomingEvents from '@/components/upcoming-events';
+import { CurrentMeal } from '@/components/current-meal';
 import { BookOpen, Calendar, MapPin, Utensils, Users, Settings, User, Bell, Trophy, Newspaper } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -81,7 +82,7 @@ export const metadata = {
 
 export default function Home() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Hero Section */}
       <div className="relative h-[200px] md:h-[300px] rounded-3xl overflow-hidden">
         <div className="absolute inset-0">
@@ -136,6 +137,49 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Current Meal and Events Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Menu Section - Takes up 2 columns */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                Today's Menu
+              </h2>
+              <p className="text-muted-foreground">Check what's cooking in the mess</p>
+            </div>
+            <Link 
+              href="/mess" 
+              className="text-sm text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-400 transition-colors hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-500/5 dark:to-emerald-500/5 rounded-2xl p-0.5">
+            <CurrentMeal />
+          </div>
+        </div>
+
+        {/* Events Section - Takes up 3 columns */}
+        <div className="lg:col-span-3 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                Upcoming Events
+              </h2>
+              <p className="text-muted-foreground">Stay updated with campus activities</p>
+            </div>
+            <Link 
+              href="/events" 
+              className="text-sm text-primary hover:text-blue-600 transition-colors hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+          <UpcomingEvents />
+        </div>
+      </div>
+
       {/* Highlights Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {Highlights.map((highlight) => (
@@ -155,26 +199,7 @@ export default function Home() {
             </div>
           </Link>
         ))}
-      </div> sir
-
-      {/* Events Section */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              Upcoming Events
-            </h2>
-            <p className="text-muted-foreground">Stay updated with campus activities</p>
-          </div>
-          <Link 
-            href="/events" 
-            className="text-sm text-primary hover:text-blue-600 transition-colors hover:underline"
-          >
-            View all
-          </Link>
-        </div>
-        <UpcomingEvents />
-      </section>
+      </div>
     </div>
   );
 }

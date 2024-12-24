@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, query, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, limit, onSnapshot, where, orderBy, Query, QueryConstraint } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCircle, MapPin, BookOpen, Mail, Calendar, GraduationCap, Hash } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserCircle, MapPin, BookOpen, Mail, Calendar, GraduationCap, Hash, Link as LinkIcon } from 'lucide-react';
 import { useToast } from './ui/use-toast';
+import Link from 'next/link';
 
 interface Person {
   id: string;
@@ -20,9 +22,19 @@ interface Person {
   dob: string;
   interests: string[];
   bio: string;
+  avatar?: string;
 }
 
-export default function DiscoverPeople() {
+interface DiscoverPeopleProps {
+  filters: {
+    search: string;
+    department: string;
+    year: string;
+    batch: string;
+  };
+}
+
+export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,24 +46,36 @@ export default function DiscoverPeople() {
         setLoading(true);
         setError(null);
 
-        const q = query(collection(db, 'users'), limit(10));
+        const constraints: QueryConstraint[] = [orderBy('name'), limit(20)];
+
+        if (filters.department !== 'All Departments') {
+          constraints.push(where('department', '==', filters.department));
+        }
+        if (filters.year !== 'All Years') {
+          constraints.push(where('year', '==', filters.year));
+        }
+        if (filters.batch !== 'All Batches') {
+          constraints.push(where('batch', '==', filters.batch));
+        }
+
+        const q = query(collection(db, 'users'), ...constraints);
 
         const unsubscribe = onSnapshot(q, 
           (snapshot) => {
-            console.log('Number of documents:', snapshot.docs.length);
-            snapshot.docs.forEach(doc => {
-              const data = doc.data();
-              console.log('User data:', {
-                id: doc.id,
-                email: data.email,
-                collegeEmail: data.collegeEmail,
-                name: data.name
-              });
-            });
-            const peopleData = snapshot.docs.map(doc => ({
+            let peopleData = snapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data()
             })) as Person[];
+
+            // Client-side search filtering
+            if (filters.search) {
+              const searchLower = filters.search.toLowerCase();
+              peopleData = peopleData.filter(person => 
+                person.name.toLowerCase().includes(searchLower) ||
+                person.regNumber.toLowerCase().includes(searchLower)
+              );
+            }
+
             setPeople(peopleData);
             setLoading(false);
           },
@@ -76,7 +100,7 @@ export default function DiscoverPeople() {
     };
 
     fetchPeople();
-  }, [toast]);
+  }, [filters.department, filters.year, filters.batch, toast]);
 
   if (error) {
     return (
@@ -94,8 +118,8 @@ export default function DiscoverPeople() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[1, 2, 3].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <Card key={i} className="p-6 animate-pulse">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gray-200 rounded-full" />
@@ -110,15 +134,32 @@ export default function DiscoverPeople() {
     );
   }
 
+  if (people.length === 0) {
+    return (
+      <Card className="p-8 text-center">
+        <div className="max-w-md mx-auto space-y-4">
+          <UserCircle className="w-12 h-12 mx-auto text-muted-foreground" />
+          <h3 className="text-lg font-semibold">No students found</h3>
+          <p className="text-muted-foreground">
+            Try adjusting your filters or search criteria to find more students.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {people.map((person) => (
         <Card key={person.id} className="p-6 hover:shadow-lg transition-all duration-200">
           <div className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <UserCircle className="w-8 h-8 text-primary" />
-              </div>
+            <div className="flex items-center gap-4">
+              <Avatar className="w-12 h-12">
+                <AvatarImage src={person.avatar} alt={person.name} />
+                <AvatarFallback>
+                  {person.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
               <div>
                 <h3 className="font-semibold">{person.name}</h3>
                 <p className="text-sm text-muted-foreground">{person.year} • {person.batch} Batch</p>
@@ -134,48 +175,47 @@ export default function DiscoverPeople() {
                 <GraduationCap className="w-4 h-4" />
                 <span>{person.department}</span>
               </div>
-              <div className="flex flex-col gap-1">
-                {person.collegeEmail && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                    <a href={`mailto:${person.collegeEmail}`} className="hover:text-primary transition-colors">
-                      {person.collegeEmail} (College)
-                    </a>
-                  </div>
-                )}
-                {person.email && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                    <a href={`mailto:${person.email}`} className="hover:text-primary transition-colors">
-                      {person.email}
-                    </a>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span>{new Date(person.dob).toLocaleDateString()}</span>
-              </div>
             </div>
 
             {person.bio && (
-              <p className="text-sm text-muted-foreground border-l-2 border-primary/20 pl-3">
+              <p className="text-sm text-muted-foreground line-clamp-2">
                 {person.bio}
               </p>
             )}
 
-            <div className="flex flex-wrap gap-2">
-              {person.interests?.map((interest, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
-                >
-                  {interest}
-                </span>
-              ))}
-            </div>
+            {person.interests && person.interests.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {person.interests.slice(0, 3).map((interest, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
+                  >
+                    {interest}
+                  </span>
+                ))}
+                {person.interests.length > 3 && (
+                  <span className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
+                    +{person.interests.length - 3} more
+                  </span>
+                )}
+              </div>
+            )}
 
-            <Button className="w-full">Connect</Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                asChild
+              >
+                <Link href={`/profile/${person.id}`}>
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  View Profile
+                </Link>
+              </Button>
+              <Button className="flex-1">
+                Connect
+              </Button>
+            </div>
           </div>
         </Card>
       ))}
