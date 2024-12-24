@@ -12,6 +12,7 @@ interface Person {
   id: string;
   name: string;
   email: string;
+  collegeEmail?: string;
   regNumber: string;
   batch: string;
   year: string;
@@ -37,11 +38,21 @@ export default function DiscoverPeople() {
 
         const unsubscribe = onSnapshot(q, 
           (snapshot) => {
+            console.log('Number of documents:', snapshot.docs.length);
+            snapshot.docs.forEach(doc => {
+              const data = doc.data();
+              console.log('User data:', {
+                id: doc.id,
+                email: data.email,
+                collegeEmail: data.collegeEmail,
+                name: data.name
+              });
+            });
             const peopleData = snapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data()
             })) as Person[];
-            setPeople(peopleData.filter(person => person.email)); // Only show people with emails
+            setPeople(peopleData);
             setLoading(false);
           },
           (error) => {
@@ -123,11 +134,23 @@ export default function DiscoverPeople() {
                 <GraduationCap className="w-4 h-4" />
                 <span>{person.department}</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="w-4 h-4" />
-                <a href={`mailto:${person.email}`} className="hover:text-primary transition-colors">
-                  {person.email}
-                </a>
+              <div className="flex flex-col gap-1">
+                {person.collegeEmail && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="w-4 h-4" />
+                    <a href={`mailto:${person.collegeEmail}`} className="hover:text-primary transition-colors">
+                      {person.collegeEmail} (College)
+                    </a>
+                  </div>
+                )}
+                {person.email && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="w-4 h-4" />
+                    <a href={`mailto:${person.email}`} className="hover:text-primary transition-colors">
+                      {person.email}
+                    </a>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="w-4 h-4" />

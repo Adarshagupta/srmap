@@ -155,7 +155,7 @@ export default function Home() {
             </div>
           </Link>
         ))}
-      </div>
+      </div> sir
 
       {/* Events Section */}
       <section className="space-y-4">
