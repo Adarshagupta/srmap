@@ -109,8 +109,8 @@ export default function ProfileForm() {
 
     if (!formData.regNumber.trim()) {
       newErrors.regNumber = 'Registration number is required';
-    } else if (!/^AP\d{8}$/i.test(formData.regNumber)) {
-      newErrors.regNumber = 'Invalid registration number format (e.g., AP21110010)';
+    } else if (!/^AP\d{8,13}$/i.test(formData.regNumber)) {
+      newErrors.regNumber = 'Invalid registration number format (e.g., AP21110010XXX)';
     }
 
     const batchYear = parseInt(formData.batch);
