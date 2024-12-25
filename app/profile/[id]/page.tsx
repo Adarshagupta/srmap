@@ -355,53 +355,48 @@ export default function ProfilePage({ params }: Props) {
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Social Links</h2>
               <div className="flex flex-wrap gap-3">
-                {console.log('Rendering social links:', person.socialLinks)}
-                {person.socialLinks.twitter && (
+                {person.socialLinks?.twitter && (
                   <a
                     href={person.socialLinks.twitter}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary"
                   >
-                    <Twitter className="w-5 h-5" />
-                    <span className="sr-only">Twitter</span>
-                    <ExternalLink className="w-4 h-4" />
+                    <Twitter className="h-5 w-5" />
+                    <span>Twitter</span>
                   </a>
                 )}
-                {person.socialLinks.instagram && (
+                {person.socialLinks?.instagram && (
                   <a
                     href={person.socialLinks.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary"
                   >
-                    <Instagram className="w-5 h-5" />
-                    <span className="sr-only">Instagram</span>
-                    <ExternalLink className="w-4 h-4" />
+                    <Instagram className="h-5 w-5" />
+                    <span>Instagram</span>
                   </a>
                 )}
-                {person.socialLinks.linkedin && (
+                {person.socialLinks?.linkedin && (
                   <a
                     href={person.socialLinks.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary"
                   >
-                    <Linkedin className="w-5 h-5" />
-                    <span className="sr-only">LinkedIn</span>
-                    <ExternalLink className="w-4 h-4" />
+                    <Linkedin className="h-5 w-5" />
+                    <span>LinkedIn</span>
                   </a>
                 )}
-                {person.socialLinks.github && (
+                {person.socialLinks?.github && (
                   <a
                     href={person.socialLinks.github}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary"
                   >
-                    <Github className="w-5 h-5" />
-                    <span className="sr-only">GitHub</span>
-                    <ExternalLink className="w-4 h-4" />
+                    <Github className="h-5 w-5" />
+                    <span>GitHub</span>
                   </a>
                 )}
               </div>
