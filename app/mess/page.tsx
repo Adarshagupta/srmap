@@ -178,6 +178,7 @@ export default function MessPage() {
         }
       );
 
+
       return unsubscribe;
     } catch (error) {
       console.error('Error in fetchMenu:', error);
