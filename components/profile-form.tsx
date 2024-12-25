@@ -9,9 +9,16 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Twitter, Instagram, Linkedin, Github } from 'lucide-react';
 import { useAuth } from './auth-provider';
 import { useRouter } from 'next/navigation';
+
+interface SocialLinks {
+  twitter?: string;
+  instagram?: string;
+  linkedin?: string;
+  github?: string;
+}
 
 interface ProfileFormData {
   name: string;
@@ -23,7 +30,12 @@ interface ProfileFormData {
   dob: string;
   interests: string;
   bio: string;
+  socialLinks: SocialLinks;
 }
+
+type FormErrors = {
+  [K in keyof ProfileFormData | keyof SocialLinks as K extends keyof SocialLinks ? `socialLinks.${K}` : K]?: string;
+};
 
 const DEPARTMENTS = [
   'Computer Science and Engineering',
@@ -46,6 +58,12 @@ const initialFormData: ProfileFormData = {
   dob: '',
   interests: '',
   bio: '',
+  socialLinks: {
+    twitter: '',
+    instagram: '',
+    linkedin: '',
+    github: '',
+  },
 };
 
 export default function ProfileForm() {
@@ -54,7 +72,7 @@ export default function ProfileForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>(initialFormData);
-  const [errors, setErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -77,6 +95,12 @@ export default function ProfileForm() {
             dob: data.dob || '',
             interests: Array.isArray(data.interests) ? data.interests.join(', ') : data.interests || '',
             bio: data.bio || '',
+            socialLinks: {
+              twitter: data.socialLinks?.twitter || '',
+              instagram: data.socialLinks?.instagram || '',
+              linkedin: data.socialLinks?.linkedin || '',
+              github: data.socialLinks?.github || '',
+            },
           });
         } else {
           // If no profile exists, set email from user
@@ -100,22 +124,15 @@ export default function ProfileForm() {
     fetchProfile();
   }, [user, toast]);
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof ProfileFormData, string>> = {};
+  const validateForm = () => {
+    const newErrors: FormErrors = {};
 
-    if (!formData.name.trim()) {
+    if (!formData.name) {
       newErrors.name = 'Name is required';
     }
 
-    if (!formData.regNumber.trim()) {
+    if (!formData.regNumber) {
       newErrors.regNumber = 'Registration number is required';
-    } else if (!/^AP\d{8,13}$/i.test(formData.regNumber)) {
-      newErrors.regNumber = 'Invalid registration number format (e.g., AP21110010XXX)';
-    }
-
-    const batchYear = parseInt(formData.batch);
-    if (isNaN(batchYear) || batchYear < 2020 || batchYear > 2030) {
-      newErrors.batch = 'Batch year must be between 2020 and 2030';
     }
 
     if (!formData.year) {
@@ -126,25 +143,27 @@ export default function ProfileForm() {
       newErrors.department = 'Department is required';
     }
 
-    if (!formData.dob) {
-      newErrors.dob = 'Date of birth is required';
+    // Validate social links format
+    const urlPattern = /^https?:\/\/.+/;
+    if (formData.socialLinks?.twitter && !urlPattern.test(formData.socialLinks.twitter)) {
+      newErrors['socialLinks.twitter'] = 'Please enter a valid URL starting with http:// or https://';
+    }
+    if (formData.socialLinks?.instagram && !urlPattern.test(formData.socialLinks.instagram)) {
+      newErrors['socialLinks.instagram'] = 'Please enter a valid URL starting with http:// or https://';
+    }
+    if (formData.socialLinks?.linkedin && !urlPattern.test(formData.socialLinks.linkedin)) {
+      newErrors['socialLinks.linkedin'] = 'Please enter a valid URL starting with http:// or https://';
+    }
+    if (formData.socialLinks?.github && !urlPattern.test(formData.socialLinks.github)) {
+      newErrors['socialLinks.github'] = 'Please enter a valid URL starting with http:// or https://';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (field: keyof ProfileFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when field is edited
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     if (!validateForm()) {
       toast({
@@ -155,21 +174,36 @@ export default function ProfileForm() {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update your profile",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
-      await setDoc(doc(db, 'users', user.uid), {
+      const docRef = doc(db, 'users', user.uid);
+      
+      const dataToSave = {
         ...formData,
         interests: formData.interests.split(',').map(i => i.trim()).filter(Boolean),
-        updatedAt: new Date().toISOString(),
-      }, { merge: true });
+        updatedAt: new Date(),
+      };
+
+      console.log('Saving profile data:', dataToSave);
+      console.log('Social links being saved:', dataToSave.socialLinks);
+      
+      await setDoc(docRef, dataToSave, { merge: true });
 
       toast({
         title: "Success",
         description: "Profile updated successfully",
       });
 
-      // Navigate back to profile page after successful update
-      router.push('/profile');
+      router.push(`/profile/${user.uid}`);
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -182,22 +216,37 @@ export default function ProfileForm() {
     }
   };
 
-  if (!user) {
-    return null;
-  }
+  type FormField = keyof ProfileFormData | `socialLinks.${keyof SocialLinks}`;
+
+  const handleChange = (field: FormField, value: string) => {
+    if (field.startsWith('socialLinks.')) {
+      const socialPlatform = field.split('.')[1] as keyof SocialLinks;
+      setFormData(prev => ({
+        ...prev,
+        socialLinks: {
+          ...prev.socialLinks,
+          [socialPlatform]: value,
+        },
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
+  };
 
   return (
     <Card className="p-6">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              required
-              className={errors.name ? 'border-destructive' : ''}
+              placeholder="John Doe"
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name}</p>
@@ -220,62 +269,54 @@ export default function ProfileForm() {
             <Input
               id="regNumber"
               value={formData.regNumber}
-              onChange={(e) => handleChange('regNumber', e.target.value.toUpperCase())}
-              placeholder="AP21110010"
-              required
-              className={errors.regNumber ? 'border-destructive' : ''}
+              onChange={(e) => handleChange('regNumber', e.target.value)}
+              placeholder="AP21110010XXX"
             />
             {errors.regNumber && (
               <p className="text-sm text-destructive">{errors.regNumber}</p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="batch">Batch</Label>
-            <Input
-              id="batch"
-              type="number"
-              min={2020}
-              max={2030}
-              value={formData.batch}
-              onChange={(e) => handleChange('batch', e.target.value)}
-              required
-              className={errors.batch ? 'border-destructive' : ''}
-            />
-            {errors.batch && (
-              <p className="text-sm text-destructive">{errors.batch}</p>
-            )}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Year</Label>
+              <Select
+                value={formData.year}
+                onValueChange={(value) => handleChange('year', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {YEARS.map((year) => (
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.year && (
+                <p className="text-sm text-destructive">{errors.year}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Batch</Label>
+              <Input
+                value={formData.batch}
+                onChange={(e) => handleChange('batch', e.target.value)}
+                placeholder="2021"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="year">Current Year</Label>
-            <Select
-              value={formData.year}
-              onValueChange={(value) => handleChange('year', value)}
-            >
-              <SelectTrigger className={errors.year ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Select year" />
-              </SelectTrigger>
-              <SelectContent>
-                {YEARS.map((year) => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.year && (
-              <p className="text-sm text-destructive">{errors.year}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="department">Department</Label>
+            <Label>Department</Label>
             <Select
               value={formData.department}
               onValueChange={(value) => handleChange('department', value)}
             >
-              <SelectTrigger className={errors.department ? 'border-destructive' : ''}>
+              <SelectTrigger>
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
@@ -298,34 +339,83 @@ export default function ProfileForm() {
               type="date"
               value={formData.dob}
               onChange={(e) => handleChange('dob', e.target.value)}
-              required
-              className={errors.dob ? 'border-destructive' : ''}
             />
-            {errors.dob && (
-              <p className="text-sm text-destructive">{errors.dob}</p>
-            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="interests">Interests (comma-separated)</Label>
             <Input
               id="interests"
-              placeholder="AI, Web Development, Robotics"
               value={formData.interests}
               onChange={(e) => handleChange('interests', e.target.value)}
+              placeholder="Programming, AI, Machine Learning"
             />
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="bio">Bio</Label>
-          <textarea
-            id="bio"
-            className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background"
-            value={formData.bio}
-            onChange={(e) => handleChange('bio', e.target.value)}
-            placeholder="Tell us about yourself..."
-          />
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <textarea
+              id="bio"
+              className="w-full min-h-[100px] px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              value={formData.bio}
+              onChange={(e) => handleChange('bio', e.target.value)}
+              placeholder="Tell us about yourself..."
+            />
+          </div>
+
+          <div className="space-y-4">
+            <Label>Social Links</Label>
+            
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Twitter className="w-5 h-5 text-muted-foreground" />
+                <Input
+                  value={formData.socialLinks?.twitter || ''}
+                  onChange={(e) => handleChange('socialLinks.twitter', e.target.value)}
+                  placeholder="https://twitter.com/username"
+                />
+              </div>
+              {errors['socialLinks.twitter'] && (
+                <p className="text-sm text-destructive">{errors['socialLinks.twitter']}</p>
+              )}
+
+              <div className="flex items-center space-x-2">
+                <Instagram className="w-5 h-5 text-muted-foreground" />
+                <Input
+                  value={formData.socialLinks?.instagram || ''}
+                  onChange={(e) => handleChange('socialLinks.instagram', e.target.value)}
+                  placeholder="https://instagram.com/username"
+                />
+              </div>
+              {errors['socialLinks.instagram'] && (
+                <p className="text-sm text-destructive">{errors['socialLinks.instagram']}</p>
+              )}
+
+              <div className="flex items-center space-x-2">
+                <Linkedin className="w-5 h-5 text-muted-foreground" />
+                <Input
+                  value={formData.socialLinks?.linkedin || ''}
+                  onChange={(e) => handleChange('socialLinks.linkedin', e.target.value)}
+                  placeholder="https://linkedin.com/in/username"
+                />
+              </div>
+              {errors['socialLinks.linkedin'] && (
+                <p className="text-sm text-destructive">{errors['socialLinks.linkedin']}</p>
+              )}
+
+              <div className="flex items-center space-x-2">
+                <Github className="w-5 h-5 text-muted-foreground" />
+                <Input
+                  value={formData.socialLinks?.github || ''}
+                  onChange={(e) => handleChange('socialLinks.github', e.target.value)}
+                  placeholder="https://github.com/username"
+                />
+              </div>
+              {errors['socialLinks.github'] && (
+                <p className="text-sm text-destructive">{errors['socialLinks.github']}</p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-4">

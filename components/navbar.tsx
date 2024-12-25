@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Notifications from './notifications';
 
 // List of admin emails
 const ADMIN_EMAILS = ['admin@srmap.edu.in'];
@@ -40,47 +41,51 @@ export default function Navbar() {
   };
 
   return (
-    <header className="border-b bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center space-x-2">
-          <GraduationCap className="h-6 w-6" />
-          <span className="font-semibold text-lg">SRM University AP</span>
-        </Link>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center justify-between">
+        {/* Logo */}
+        <div className="flex items-center">
+          <Link href="/" className="flex items-center gap-2">
+            <GraduationCap className="h-6 w-6" />
+            <span className="font-semibold hidden md:inline-block">SRM University AP</span>
+          </Link>
+        </div>
 
-        <NavigationMenu className="hidden md:block">
-          <NavigationMenuList className="space-x-4">
-            <NavigationMenuItem>
-              <Link href="/events" legacyBehavior passHref>
-                <NavigationMenuLink className="hover:text-primary transition-colors">
-                  Events
-                </NavigationMenuLink>
+        {/* Navigation Links - Hidden on Mobile, Centered on Desktop */}
+        <nav className="hidden md:flex items-center justify-center flex-1 px-6">
+          <div className="flex items-center space-x-6">
+            <Link 
+              href="/events" 
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Events
+            </Link>
+            <Link 
+              href="/mess-menu" 
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Mess Menu
+            </Link>
+            <Link 
+              href="/discover" 
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Discover
+            </Link>
+            {user && (
+              <Link 
+                href={`/profile/${user.uid}`} 
+                className="text-sm font-medium transition-colors hover:text-primary"
+              >
+                Profile
               </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href="/mess" legacyBehavior passHref>
-                <NavigationMenuLink className="hover:text-primary transition-colors">
-                  Mess Menu
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href="/navigation" legacyBehavior passHref>
-                <NavigationMenuLink className="hover:text-primary transition-colors">
-                  Navigation
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href="/discover" legacyBehavior passHref>
-                <NavigationMenuLink className="hover:text-primary transition-colors">
-                  Discover
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
+            )}
+          </div>
+        </nav>
 
-        <div className="flex items-center space-x-2">
+        {/* Right Side Actions */}
+        <div className="flex items-center gap-2">
+          {user && <Notifications />}
           <ModeToggle />
           {user ? (
             <DropdownMenu>
@@ -90,6 +95,12 @@ export default function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <Link href={`/profile/${user.uid}`}>
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                </Link>
                 {isAdmin && (
                   <Link href="/admin">
                     <DropdownMenuItem>

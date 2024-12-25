@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth.token.email in ['admin@srmap.edu.in'];
+    }
+
+    // Helper function to check if user is a participant
+    function isParticipant(participants) {
+      return request.auth != null && 
+             request.auth.uid in participants;
+    }
+
+    // Public collections that anyone can read
+    match /mess-menus/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /events/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /buildings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // User profiles - users can read all profiles but only edit their own
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if request.auth != null && 
+                   request.auth.uid == userId;
+      allow update: if request.auth != null && 
+                   request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // Connections - users can manage their own connections
+    match /connections/{connectionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+        request.resource.data.participants.hasAll([request.auth.uid]) &&
+        request.resource.data.status == 'pending';
+      allow update: if request.auth != null && 
+        resource.data.participants.hasAll([request.auth.uid]) &&
+        request.resource.data.participants == resource.data.participants;
+      allow delete: if request.auth != null && 
+        resource.data.participants.hasAll([request.auth.uid]);
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+} 

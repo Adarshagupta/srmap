@@ -6,9 +6,24 @@ import { db } from '@/lib/firebase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UserCircle, MapPin, BookOpen, Mail, Calendar, GraduationCap, Hash, Link as LinkIcon } from 'lucide-react';
+import { 
+  UserCircle, 
+  MapPin, 
+  BookOpen, 
+  Mail, 
+  Calendar, 
+  GraduationCap, 
+  Hash, 
+  Link as LinkIcon,
+  UserPlus,
+  UserMinus,
+  Clock,
+  Loader2
+} from 'lucide-react';
 import { useToast } from './ui/use-toast';
 import Link from 'next/link';
+import { useAuth } from './auth-provider';
+import { useConnections, ConnectionStatus } from '@/hooks/use-connections';
 
 interface Person {
   id: string;
@@ -34,7 +49,86 @@ interface DiscoverPeopleProps {
   };
 }
 
+function ConnectionButton({ personId }: { personId: string }) {
+  const { user } = useAuth();
+  const { 
+    connectionStatus,
+    loading: connectionLoading,
+    connections,
+    sendConnectionRequest,
+    acceptConnectionRequest,
+    removeConnection
+  } = useConnections(personId);
+
+  const handleConnection = async () => {
+    if (!user) return;
+
+    const connection = connections.find(
+      c => c.senderId === personId || c.receiverId === personId
+    );
+
+    if (connectionStatus === 'none') {
+      await sendConnectionRequest(personId);
+    } else if (connectionStatus === 'pending' && connection) {
+      if (connection.receiverId === user.uid) {
+        await acceptConnectionRequest(connection.id);
+      }
+    } else if (connectionStatus === 'connected' && connection) {
+      await removeConnection(connection.id);
+    }
+  };
+
+  if (!user || user.uid === personId) return null;
+
+  if (connectionLoading) {
+    return (
+      <Button className="flex-1" disabled>
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        Loading
+      </Button>
+    );
+  }
+
+  switch (connectionStatus) {
+    case 'none':
+      return (
+        <Button className="flex-1" onClick={handleConnection}>
+          <UserPlus className="w-4 h-4 mr-2" />
+          Connect
+        </Button>
+      );
+    case 'pending':
+      const isPending = connections.find(
+        c => c.receiverId === user.uid && c.senderId === personId
+      );
+      if (isPending) {
+        return (
+          <Button className="flex-1" onClick={handleConnection}>
+            <Clock className="w-4 h-4 mr-2" />
+            Accept Request
+          </Button>
+        );
+      }
+      return (
+        <Button className="flex-1" variant="secondary" disabled>
+          <Clock className="w-4 h-4 mr-2" />
+          Request Sent
+        </Button>
+      );
+    case 'connected':
+      return (
+        <Button className="flex-1" variant="secondary" onClick={handleConnection}>
+          <UserMinus className="w-4 h-4 mr-2" />
+          Connected
+        </Button>
+      );
+    default:
+      return null;
+  }
+}
+
 export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
+  const { user } = useAuth();
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +170,11 @@ export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
               );
             }
 
+            // Filter out current user
+            if (user) {
+              peopleData = peopleData.filter(person => person.id !== user.uid);
+            }
+
             setPeople(peopleData);
             setLoading(false);
           },
@@ -100,7 +199,7 @@ export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
     };
 
     fetchPeople();
-  }, [filters.department, filters.year, filters.batch, toast]);
+  }, [filters.department, filters.year, filters.batch, toast, user]);
 
   if (error) {
     return (
@@ -212,9 +311,7 @@ export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
                   View Profile
                 </Link>
               </Button>
-              <Button className="flex-1">
-                Connect
-              </Button>
+              <ConnectionButton personId={person.id} />
             </div>
           </div>
         </Card>

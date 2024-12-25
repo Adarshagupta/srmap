@@ -1,5 +1,7 @@
-import { Metadata } from 'next';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+"use client";
+
+import { useEffect, useState, useCallback } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,10 +16,22 @@ import {
   BookOpen,
   ArrowLeft,
   Link as LinkIcon,
-  Loader2
+  Loader2,
+  UserPlus,
+  UserMinus,
+  Clock,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Github,
+  ExternalLink,
+  Settings
 } from 'lucide-react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/auth-provider';
+import { useConnections } from '@/hooks/use-connections';
+import ShareProfile from '@/components/share-profile';
 
 interface Person {
   id: string;
@@ -32,108 +46,219 @@ interface Person {
   interests: string[];
   bio: string;
   avatar?: string;
+  socialLinks?: {
+    twitter?: string;
+    instagram?: string;
+    linkedin?: string;
+    github?: string;
+  };
 }
 
 interface Props {
   params: { id: string }
 }
 
-export async function generateStaticParams() {
-  const usersRef = collection(db, 'users');
-  const snapshot = await getDocs(usersRef);
-  
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-  }));
-}
+export default function ProfilePage({ params }: Props) {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [person, setPerson] = useState<Person | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const docRef = doc(db, 'users', params.id);
-  const docSnap = await getDoc(docRef);
+  const { 
+    connectionStatus, 
+    loading: connectionLoading,
+    connections,
+    sendConnectionRequest,
+    acceptConnectionRequest,
+    removeConnection
+  } = useConnections(params.id);
 
-  if (!docSnap.exists()) {
-    return {
-      title: 'Profile Not Found | SRM AP Connect',
-      description: 'The requested profile could not be found.',
-      openGraph: {
-        title: 'Profile Not Found | SRM AP Connect',
-        description: 'The requested profile could not be found.',
-        type: 'profile',
-      },
-      twitter: {
-        card: 'summary',
-        title: 'Profile Not Found | SRM AP Connect',
-        description: 'The requested profile could not be found.',
-      },
+  const handleConnect = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    sendConnectionRequest(params.id);
+  }, [user, params.id, sendConnectionRequest]);
+
+  const handleAccept = useCallback((connectionId: string) => {
+    if (!user) return;
+    acceptConnectionRequest(connectionId);
+  }, [user, acceptConnectionRequest]);
+
+  const handleRemove = useCallback((connectionId: string) => {
+    if (!user) return;
+    removeConnection(connectionId);
+  }, [user, removeConnection]);
+
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const ConnectButton = () => {
+    if (!user || user.uid === params.id) return null;
+
+    if (connectionLoading) {
+      return (
+        <Button disabled>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Loading
+        </Button>
+      );
+    }
+
+    const connection = connections.find(
+      c => (c.senderId === user.uid && c.receiverId === params.id) ||
+           (c.senderId === params.id && c.receiverId === user.uid)
+    );
+
+    const handleClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (!connection) {
+        sendConnectionRequest(params.id);
+      } else if (connection.status === 'pending' && connection.receiverId === user.uid) {
+        acceptConnectionRequest(connection.id);
+      } else if (connection.status === 'connected') {
+        removeConnection(connection.id);
+      }
     };
-  }
 
-  const person = docSnap.data() as Person;
-  const title = `${person.name} | SRM AP Connect`;
-  const description = person.bio || 
-    `${person.name} is a ${person.year} student in ${person.department} at SRM University AP.`;
+    if (!connection) {
+      return (
+        <Button onClick={handleClick}>
+          <UserPlus className="w-4 h-4 mr-2" />
+          Connect
+        </Button>
+      );
+    }
 
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: 'profile',
-      images: [
-        {
-          url: person.avatar || 'https://srmap.edu.in/wp-content/uploads/2019/11/SRMAP-Logo-2.png',
-          width: 1200,
-          height: 630,
-          alt: person.name,
-        },
-      ],
-      firstName: person.name.split(' ')[0],
-      lastName: person.name.split(' ').slice(1).join(' '),
-      username: person.regNumber,
-      gender: 'unspecified',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [person.avatar || 'https://srmap.edu.in/wp-content/uploads/2019/11/SRMAP-Logo-2.png'],
-    },
-    alternates: {
-      canonical: `https://srmap.edu.in/profile/${params.id}`,
-    },
-    keywords: [
-      'SRM AP',
-      'student profile',
-      person.name,
-      person.department,
-      person.year,
-      'university',
-      'education',
-      ...(person.interests || []),
-    ],
-  };
-}
+    if (connection.status === 'pending') {
+      if (connection.receiverId === user.uid) {
+        return (
+          <Button onClick={handleClick}>
+            <Clock className="w-4 h-4 mr-2" />
+            Accept Request
+          </Button>
+        );
+      }
+      return (
+        <Button variant="secondary" disabled>
+          <Clock className="w-4 h-4 mr-2" />
+          Request Sent
+        </Button>
+      );
+    }
 
-async function getProfile(id: string): Promise<Person | null> {
-  const docRef = doc(db, 'users', id);
-  const docSnap = await getDoc(docRef);
+    if (connection.status === 'connected') {
+      return (
+        <Button variant="secondary" onClick={handleClick}>
+          <UserMinus className="w-4 h-4 mr-2" />
+          Connected
+        </Button>
+      );
+    }
 
-  if (!docSnap.exists()) {
     return null;
+  };
+
+  const ProfileActions = () => {
+    if (!user) return null;
+
+    const shareUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/profile/${params.id}`
+      : `/profile/${params.id}`;
+
+    if (user.uid === params.id) {
+      return (
+        <div className="flex items-center gap-2">
+          <Link href="/profile/edit">
+            <Button>
+              <Settings className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+          </Link>
+          <ShareProfile 
+            name={person?.name || 'User'} 
+            profileUrl={shareUrl}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <ConnectButton />
+        <ShareProfile 
+          name={person?.name || 'User'} 
+          profileUrl={shareUrl}
+        />
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    async function getProfile() {
+      try {
+        setLoading(true);
+        const docRef = doc(db, 'users', params.id);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          setError('Profile not found');
+          return;
+        }
+
+        const data = docSnap.data();
+        console.log('Profile data:', data);
+        console.log('Social links:', data.socialLinks);
+
+        setPerson({
+          id: docSnap.id,
+          ...data
+        } as Person);
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+        setError('Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    getProfile();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="container max-w-4xl py-6">
+        <Card className="p-6 md:p-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </Card>
+      </div>
+    );
   }
 
-  return {
-    id: docSnap.id,
-    ...docSnap.data()
-  } as Person;
-}
-
-export default async function ProfilePage({ params }: Props) {
-  const person = await getProfile(params.id);
-
-  if (!person) {
-    notFound();
+  if (error || !person) {
+    return (
+      <div className="container max-w-4xl py-6">
+        <Card className="p-8 text-center">
+          <div className="max-w-md mx-auto space-y-4">
+            <UserCircle className="w-12 h-12 mx-auto text-muted-foreground" />
+            <h3 className="text-lg font-semibold">Profile Not Found</h3>
+            <p className="text-muted-foreground">
+              The profile you're looking for doesn't exist or hasn't been created yet.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/discover')}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Discover
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -141,12 +266,10 @@ export default async function ProfilePage({ params }: Props) {
       <Button 
         variant="ghost" 
         className="mb-4"
-        asChild
+        onClick={handleBack}
       >
-        <Link href="/discover">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Discover
-        </Link>
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back
       </Button>
 
       <Card className="p-6 md:p-8">
@@ -170,9 +293,7 @@ export default async function ProfilePage({ params }: Props) {
                 </span>
               </div>
             </div>
-            <Button>
-              Connect
-            </Button>
+            <ProfileActions />
           </div>
 
           {/* Bio */}
@@ -228,6 +349,64 @@ export default async function ProfilePage({ params }: Props) {
               </div>
             )}
           </div>
+
+          {/* Social Links */}
+          {person.socialLinks && Object.values(person.socialLinks).some(link => link) && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold">Social Links</h2>
+              <div className="flex flex-wrap gap-3">
+                {console.log('Rendering social links:', person.socialLinks)}
+                {person.socialLinks.twitter && (
+                  <a
+                    href={person.socialLinks.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Twitter className="w-5 h-5" />
+                    <span className="sr-only">Twitter</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+                {person.socialLinks.instagram && (
+                  <a
+                    href={person.socialLinks.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Instagram className="w-5 h-5" />
+                    <span className="sr-only">Instagram</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+                {person.socialLinks.linkedin && (
+                  <a
+                    href={person.socialLinks.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Linkedin className="w-5 h-5" />
+                    <span className="sr-only">LinkedIn</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+                {person.socialLinks.github && (
+                  <a
+                    href={person.socialLinks.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Github className="w-5 h-5" />
+                    <span className="sr-only">GitHub</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>
