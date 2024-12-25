@@ -1,30 +1,48 @@
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, ServiceAccount } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 
 // Initialize Firebase Admin if not already initialized
 if (!getApps().length) {
   const serviceAccount = {
     type: "service_account",
-    project_id: process.env.FIREBASE_PROJECT_ID,
-    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-    private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    client_email: process.env.FIREBASE_CLIENT_EMAIL,
-    client_id: process.env.FIREBASE_CLIENT_ID,
-    auth_uri: "https://accounts.google.com/o/oauth2/auth",
-    token_uri: "https://oauth2.googleapis.com/token",
-    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-    client_x509_cert_url: process.env.FIREBASE_CERT_URL
-  };
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    clientId: process.env.FIREBASE_CLIENT_ID,
+    authUri: "https://accounts.google.com/o/oauth2/auth",
+    tokenUri: "https://oauth2.googleapis.com/token",
+    authProviderX509CertUrl: "https://www.googleapis.com/oauth2/v1/certs",
+    clientX509CertUrl: process.env.FIREBASE_CERT_URL
+  } as ServiceAccount;
 
-  initializeApp({
-    credential: cert(serviceAccount)
-  });
+  // Check if required fields are present
+  if (!serviceAccount.projectId || !serviceAccount.privateKey || !serviceAccount.clientEmail) {
+    throw new Error('Missing required Firebase service account credentials');
+  }
+
+  try {
+    initializeApp({
+      credential: cert(serviceAccount)
+    });
+    console.log('Firebase Admin initialized successfully');
+  } catch (error) {
+    console.error('Error initializing Firebase Admin:', error);
+    throw error;
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const { token, title, body } = await request.json();
+
+    if (!token || !title || !body) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
 
     const message = {
       notification: {
