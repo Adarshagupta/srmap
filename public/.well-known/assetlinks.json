@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "live.srmap.twa",
+        "sha256_cert_fingerprints": ["46:59:1F:93:B2:38:A1:AC:68:3B:64:CA:81:64:13:96:F6:77:52:DE:3D:48:A1:7B:50:26:31:04:FF:41:37:BF"]
+      }
+    }]
