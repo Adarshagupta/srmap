@@ -168,7 +168,7 @@ function PostCard({ post }: { post: Post }) {
   const [commentContent, setCommentContent] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
-  const { toggleLike, addComment, sharePost, commenting, liking } = usePostInteractions(post.id);
+  const { toggleLike, addComment, sharePost, deletePost, commenting, liking } = usePostInteractions(post.id);
   const hasLiked = post.likedBy?.includes(user?.uid || '');
 
   useEffect(() => {
@@ -231,9 +231,14 @@ function PostCard({ post }: { post: Post }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Copy link</DropdownMenuItem>
+                  <DropdownMenuItem onClick={sharePost}>Copy link</DropdownMenuItem>
                   {user?.uid === post.authorId && (
-                    <DropdownMenuItem className="text-destructive">Delete post</DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={deletePost}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      Delete post
+                    </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>

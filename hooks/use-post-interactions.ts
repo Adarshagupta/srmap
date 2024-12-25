@@ -10,7 +10,10 @@ import {
   collection, 
   serverTimestamp,
   increment,
-  getDoc
+  getDoc,
+  deleteDoc,
+  query,
+  getDocs
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/components/ui/use-toast';
@@ -119,10 +122,47 @@ export function usePostInteractions(postId: string) {
     }
   }, [postId, toast]);
 
+  const deletePost = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const postRef = doc(db, 'posts', postId);
+      const postDoc = await getDoc(postRef);
+      const postData = postDoc.data();
+
+      // Check if user is the author
+      if (postData?.authorId !== user.uid) {
+        throw new Error('Not authorized to delete this post');
+      }
+
+      // Delete all comments
+      const commentsQuery = query(collection(db, 'posts', postId, 'comments'));
+      const commentsSnapshot = await getDocs(commentsQuery);
+      const deleteCommentPromises = commentsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deleteCommentPromises);
+
+      // Delete the post document
+      await deleteDoc(postRef);
+
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [user, postId, toast]);
+
   return {
     toggleLike,
     addComment,
     sharePost,
+    deletePost,
     commenting,
     liking,
   };
