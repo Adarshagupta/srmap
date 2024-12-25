@@ -1,2 +1,13 @@
-// This file is not needed as we're using client-side Firebase Storage
-// If you need server-side image handling in the future, you can re-enable this file 
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  return NextResponse.json({ message: 'This endpoint is deprecated. Please use client-side Firebase Storage.' }, { status: 410 });
+}
+
+export async function POST() {
+  return NextResponse.json({ message: 'This endpoint is deprecated. Please use client-side Firebase Storage.' }, { status: 410 });
+}
+
+export async function PUT() {
+  return NextResponse.json({ message: 'This endpoint is deprecated. Please use client-side Firebase Storage.' }, { status: 410 });
+} 

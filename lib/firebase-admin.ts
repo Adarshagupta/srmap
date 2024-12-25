@@ -1,2 +1,8 @@
-// This file is not needed for static exports as we're using client-side Firebase only
-// If you need server-side Firebase functionality in the future, you can re-enable this file 
+// This file is kept for future server-side Firebase functionality
+// Currently using client-side Firebase only for static exports
+
+export const isServerSide = false;
+
+export function getServerSideAuth() {
+  throw new Error('Server-side Firebase functionality is not available in static exports');
+} 
