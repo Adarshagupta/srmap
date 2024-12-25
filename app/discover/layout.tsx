@@ -1,22 +1,11 @@
 "use client";
 
-import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { Loader2 } from 'lucide-react';
+import { AuthCheck } from '@/components/auth-check';
 
 export default function DiscoverLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { loading } = useAuthGuard();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  return <>{children}</>;
+  return <AuthCheck>{children}</AuthCheck>;
 }

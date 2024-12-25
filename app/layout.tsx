@@ -29,6 +29,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: '#0f172a',
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {
@@ -36,22 +37,84 @@ export const metadata: Metadata = {
     default: 'SRM AP Connect',
     template: '%s | SRM AP Connect',
   },
-  description: 'Your complete campus companion for SRM University AP',
+  description: 'Experience excellence in education at our state-of-the-art campus. Your journey to success begins here.',
+  keywords: [
+    'SRM AP',
+    'university',
+    'education',
+    'engineering',
+    'campus',
+    'college',
+    'student portal',
+    'mess menu',
+    'events',
+    'navigation',
+  ],
+  authors: [{ name: 'SRM University AP' }],
+  creator: 'SRM University AP',
+  publisher: 'SRM University AP',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://srmap.edu.in'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://srmap.edu.in',
+    title: 'SRM AP Connect',
+    description: 'Experience excellence in education at our state-of-the-art campus. Your journey to success begins here.',
+    siteName: 'SRM AP Connect',
+    images: [
+      {
+        url: 'https://srmap.edu.in/wp-content/uploads/2019/11/SRMAP-Logo-2.png',
+        width: 1200,
+        height: 630,
+        alt: 'SRM University AP',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SRM AP Connect',
+    description: 'Experience excellence in education at our state-of-the-art campus. Your journey to success begins here.',
+    creator: '@SRMAP_Official',
+    images: ['https://srmap.edu.in/wp-content/uploads/2019/11/SRMAP-Logo-2.png'],
+  },
+  verification: {
+    google: 'your-google-site-verification',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  icons: {
+    icon: '/icons/favicon.ico',
+    shortcut: '/icons/favicon.ico',
+    apple: '/icons/ios/ios-appicon-180-180.png',
+    other: {
+      rel: 'apple-touch-icon-precomposed',
+      url: '/icons/ios/ios-appicon-180-180.png',
+    },
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'SRM AP Connect',
   },
-  formatDetection: {
-    telephone: false,
-  },
-  icons: {
-    shortcut: '/icons/windows11/SmallTile.scale-100.png',
-    apple: [
-      { url: '/icons/ios/180.png', sizes: '180x180' },
-    ],
-  },
+  applicationName: 'SRM AP Connect',
 };
 
 export default function RootLayout({
@@ -61,15 +124,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="apple-touch-icon" href="/icons/ios/180.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="SRM AP Connect" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#0f172a" />
-        <link rel="manifest" href="/manifest.json" />
-      </head>
+      <head />
       <body className={inter.className}>
         <Providers>
           <div className="flex flex-col min-h-screen">
