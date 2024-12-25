@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Clock, UtensilsCrossed, Coffee, ChefHat, Timer, CalendarDays } from 'lucide-react';
+import { Loader2, Clock, UtensilsCrossed, Coffee, ChefHat, Timer, CalendarDays, WifiOff } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
@@ -96,6 +96,26 @@ export default function MessPage() {
   const [menu, setMenu] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [nextMeal, setNextMeal] = useState(getTimeUntilNextMeal());
+  const [isOffline, setIsOffline] = useState(false);
+  const { toast } = useToast();
+
+  // Check online status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      fetchMenu(); // Refresh data when back online
+    };
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    setIsOffline(!navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -107,23 +127,85 @@ export default function MessPage() {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    const menuRef = collection(db, 'mess-menus');
-    const menuQuery = query(menuRef, where('id', '==', `${selectedMess}-${selectedDay}`));
-    
-    const unsubscribe = onSnapshot(menuQuery, (snapshot) => {
+  const fetchMenu = async () => {
+    try {
+      const menuRef = collection(db, 'mess-menus');
+      const menuQuery = query(menuRef, where('id', '==', `${selectedMess}-${selectedDay}`));
+      
+      // First try to get from cache
+      const snapshot = await getDocs(menuQuery);
       if (!snapshot.empty) {
         setMenu(snapshot.docs[0].data());
-      } else {
-        setMenu(null);
+        setLoading(false);
       }
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching menu:', error);
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
+      // Then set up real-time listener for updates
+      const unsubscribe = onSnapshot(menuQuery, 
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const menuData = snapshot.docs[0].data();
+            setMenu(menuData);
+            
+            // Cache the menu data
+            if ('caches' in window) {
+              const cacheKey = `mess-menu-${selectedMess}-${selectedDay}`;
+              localStorage.setItem(cacheKey, JSON.stringify(menuData));
+            }
+          } else {
+            setMenu(null);
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Error fetching menu:', error);
+          // Try to get from local storage if offline
+          const cacheKey = `mess-menu-${selectedMess}-${selectedDay}`;
+          const cachedData = localStorage.getItem(cacheKey);
+          if (cachedData) {
+            setMenu(JSON.parse(cachedData));
+          } else {
+            setMenu(null);
+          }
+          setLoading(false);
+          
+          if (!isOffline) {
+            toast({
+              title: "Connection Error",
+              description: "Using cached menu data. Some information may be outdated.",
+              variant: "destructive",
+            });
+          }
+        }
+      );
+
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error in fetchMenu:', error);
+      setLoading(false);
+      
+      // Try to get from local storage
+      const cacheKey = `mess-menu-${selectedMess}-${selectedDay}`;
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        setMenu(JSON.parse(cachedData));
+      }
+    }
+  };
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    
+    const initializeMenu = async () => {
+      unsubscribe = await fetchMenu();
+    };
+
+    initializeMenu();
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, [selectedMess, selectedDay]);
 
   if (loading) {
@@ -137,15 +219,24 @@ export default function MessPage() {
   const MealIcon = MEAL_TIMINGS[selectedMeal as keyof typeof MEAL_TIMINGS].icon;
 
   return (
-    <div className="container max-w-4xl py-3 space-y-4">
+    <div className="container max-w-4xl py-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Mess Menu</h1>
-          <p className="text-muted-foreground mt-1">View today's menu and upcoming meals</p>
+          <p className="text-muted-foreground mt-1">
+            {isOffline ? (
+              <span className="flex items-center gap-2">
+                <WifiOff className="h-4 w-4" />
+                Offline Mode - Showing cached menu
+              </span>
+            ) : (
+              "View today's menu and upcoming meals"
+            )}
+          </p>
         </div>
 
         <Card className="border-primary/20">
-          <CardContent className="p-3 flex items-center gap-3">
+          <CardContent className="p-4 flex items-center gap-4">
             <div className="p-2 bg-primary/10 rounded-full">
               <Timer className="h-5 w-5 text-primary" />
             </div>
@@ -157,15 +248,15 @@ export default function MessPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-2 pt-3 px-3">
+          <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
               Select Day
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-3 pb-3">
+          <CardContent>
             <div className="flex flex-wrap gap-2">
               {DAYS.map((day) => (
                 <Badge
@@ -182,13 +273,13 @@ export default function MessPage() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2 pt-3 px-3">
+          <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <UtensilsCrossed className="h-4 w-4" />
               Select Mess
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-3 pb-3">
+          <CardContent>
             <div className="flex gap-2">
               <Badge
                 variant={selectedMess === 'national' ? "default" : "outline"}
@@ -210,17 +301,17 @@ export default function MessPage() {
       </div>
 
       <Card className="relative overflow-hidden">
-        <div className="absolute right-3 top-3 p-2 bg-primary/10 rounded-full">
+        <div className="absolute right-4 top-4 p-2 bg-primary/10 rounded-full">
           <MealIcon className="h-5 w-5 text-primary" />
         </div>
         
-        <CardHeader className="pb-2 pt-3 px-3">
+        <CardHeader>
           <CardTitle>Today's Menu</CardTitle>
         </CardHeader>
 
-        <CardContent className="px-3 pb-3">
+        <CardContent className="pb-6">
           <Tabs value={selectedMeal} onValueChange={setSelectedMeal}>
-            <TabsList className="w-full justify-start mb-3">
+            <TabsList className="w-full justify-start mb-4">
               <TabsTrigger value="breakfast" className="flex gap-2">
                 <Coffee className="h-4 w-4" />
                 Breakfast
@@ -238,7 +329,7 @@ export default function MessPage() {
             {['breakfast', 'lunch', 'dinner'].map((meal) => (
               <TabsContent key={meal} value={meal}>
                 {menu && menu[meal] ? (
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {menu[meal].map((item: string, index: number) => (
                       <li key={index} className="flex items-start gap-2">
                         <span className="text-primary">•</span>
@@ -247,7 +338,7 @@ export default function MessPage() {
                     ))}
                   </ul>
                 ) : (
-                  <div className="text-center py-6">
+                  <div className="text-center py-8">
                     <UtensilsCrossed className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-muted-foreground">No menu available for this meal</p>
                   </div>

@@ -1,9 +1,16 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { 
   getFirestore, 
-  initializeFirestore, 
-  persistentLocalCache, 
-  persistentSingleTabManager
+  enableIndexedDbPersistence,
+  getDoc,
+  doc,
+  collection,
+  getDocs,
+  query,
+  where,
+  onSnapshot,
+  initializeFirestore,
+  CACHE_SIZE_UNLIMITED
 } from 'firebase/firestore';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getAnalytics, isSupported } from 'firebase/analytics';
@@ -21,14 +28,25 @@ const firebaseConfig = {
 // Initialize Firebase
 let app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize Firestore with settings
+// Initialize Firestore with settings for better offline support
 const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager({
-      forceOwnership: true
-    })
-  })
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED
 });
+
+// Enable offline persistence
+try {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      // Multiple tabs open, persistence can only be enabled in one tab at a time.
+      console.warn('Multiple tabs open, persistence disabled');
+    } else if (err.code === 'unimplemented') {
+      // The current browser doesn't support persistence
+      console.warn('Persistence not supported by browser');
+    }
+  });
+} catch (err) {
+  console.warn('Error enabling persistence:', err);
+}
 
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
