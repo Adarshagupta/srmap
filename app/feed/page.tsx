@@ -64,10 +64,13 @@ function CreatePostCard() {
 
     try {
       setPosting(true);
+      const timestamp = serverTimestamp();
       await addDoc(collection(db, 'posts'), {
         content: content.trim(),
         authorId: user.uid,
-        createdAt: serverTimestamp(),
+        authorName: user.displayName || 'Anonymous',
+        authorAvatar: user.photoURL || null,
+        createdAt: timestamp,
         likes: 0,
         comments: 0,
         likedBy: [],
@@ -221,7 +224,7 @@ function PostCard({ post }: { post: Post }) {
                 </Link>
                 <span className="text-muted-foreground">·</span>
                 <span className="text-muted-foreground">
-                  {formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })}
+                  {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'Just now'}
                 </span>
               </div>
               <DropdownMenu>

@@ -284,147 +284,161 @@ export default function ProfilePage({ params }: Props) {
 
   return (
     <div className="container max-w-4xl py-6 space-y-6">
-      <Button 
-        variant="ghost" 
-        className="mb-4"
-        onClick={handleBack}
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
-
-      <Card className="p-6 md:p-8">
-        <div className="space-y-8">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
-            <Avatar className="w-24 h-24">
-              <AvatarImage src={person.avatar} alt={person.name} />
-              <AvatarFallback className="text-2xl">
-                {person.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-2 flex-1">
-              <h1 className="text-2xl font-bold">{person.name}</h1>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-2 py-1 text-sm rounded-full bg-primary/10 text-primary">
-                  {person.year}
-                </span>
-                <span className="px-2 py-1 text-sm rounded-full bg-primary/10 text-primary">
-                  {person.batch} Batch
-                </span>
-              </div>
-            </div>
-            <ProfileActions />
-          </div>
-
-          {/* Bio */}
-          {person.bio && (
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold">About</h2>
-              <p className="text-muted-foreground">
-                {person.bio}
-              </p>
-            </div>
-          )}
-
-          {/* Details */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Academic Details</h2>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Hash className="w-4 h-4" />
-                  <span>{person.regNumber}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <GraduationCap className="w-4 h-4" />
-                  <span>{person.department}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="w-4 h-4" />
-                  <span>{person.email}</span>
-                </div>
-                {person.collegeEmail && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                    <span>{person.collegeEmail}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Interests */}
-            {person.interests && person.interests.length > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold">Interests</h2>
-                <div className="flex flex-wrap gap-2">
-                  {person.interests.map((interest, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 text-sm rounded-full bg-primary/10 text-primary"
-                    >
-                      {interest}
+      {/* Profile Header Card */}
+      <Card className="relative overflow-hidden">
+        {/* Cover Image - You can add a cover image feature later */}
+        <div className="h-32 bg-gradient-to-r from-primary/10 to-primary/5" />
+        
+        <div className="p-6 md:p-8">
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="flex flex-col gap-6">
+              {/* Avatar and Actions */}
+              <div className="flex flex-col md:flex-row gap-6 items-center md:items-end">
+                <Avatar className="w-32 h-32 border-4 border-background -mt-20">
+                  <AvatarImage src={person.avatar} alt={person.name} />
+                  <AvatarFallback className="text-3xl">
+                    {person.name.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 text-center md:text-left">
+                  <h1 className="text-3xl font-bold mb-2">{person.name}</h1>
+                  <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                    <span className="px-3 py-1 text-sm rounded-full bg-primary/10 text-primary font-medium">
+                      {person.year}
                     </span>
-                  ))}
+                    <span className="px-3 py-1 text-sm rounded-full bg-primary/10 text-primary font-medium">
+                      {person.batch} Batch
+                    </span>
+                    <span className="px-3 py-1 text-sm rounded-full bg-primary/10 text-primary font-medium">
+                      {person.department}
+                    </span>
+                  </div>
                 </div>
+                <div className="flex gap-2">
+                  <ProfileActions />
+                </div>
+              </div>
+
+              {/* Bio */}
+              {person.bio && (
+                <div className="space-y-2 pt-4 border-t">
+                  <p className="text-muted-foreground leading-relaxed">
+                    {person.bio}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Details Grid */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Academic Info Card */}
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <GraduationCap className="w-5 h-5" />
+            Academic Info
+          </h2>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Registration Number</label>
+              <p className="font-medium">{person.regNumber}</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">Personal Email</label>
+              <p className="font-medium break-all">{person.email}</p>
+            </div>
+            {person.collegeEmail && (
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">College Email</label>
+                <p className="font-medium break-all">{person.collegeEmail}</p>
               </div>
             )}
           </div>
+        </Card>
 
-          {/* Social Links */}
-          {person.socialLinks && Object.values(person.socialLinks).some(link => link) && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Social Links</h2>
-              <div className="flex flex-wrap gap-3">
-                {person.socialLinks?.twitter && (
-                  <a
-                    href={person.socialLinks.twitter}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary"
-                  >
-                    <Twitter className="h-5 w-5" />
-                    <span>Twitter</span>
-                  </a>
-                )}
-                {person.socialLinks?.instagram && (
-                  <a
-                    href={person.socialLinks.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary"
-                  >
-                    <Instagram className="h-5 w-5" />
-                    <span>Instagram</span>
-                  </a>
-                )}
-                {person.socialLinks?.linkedin && (
-                  <a
-                    href={person.socialLinks.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary"
-                  >
-                    <Linkedin className="h-5 w-5" />
-                    <span>LinkedIn</span>
-                  </a>
-                )}
-                {person.socialLinks?.github && (
-                  <a
-                    href={person.socialLinks.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-muted-foreground hover:text-primary"
-                  >
-                    <Github className="h-5 w-5" />
-                    <span>GitHub</span>
-                  </a>
-                )}
-              </div>
+        {/* Interests Card */}
+        {person.interests && person.interests.length > 0 && (
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              Interests
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {person.interests.map((interest, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 text-sm rounded-full bg-secondary text-secondary-foreground font-medium"
+                >
+                  {interest}
+                </span>
+              ))}
             </div>
-          )}
-        </div>
-      </Card>
+          </Card>
+        )}
+
+        {/* Social Links Card */}
+        {person.socialLinks && Object.values(person.socialLinks).some(link => link) && (
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <LinkIcon className="w-5 h-5" />
+              Social Links
+            </h2>
+            <div className="grid gap-3">
+              {person.socialLinks?.twitter && (
+                <a
+                  href={person.socialLinks.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Twitter className="h-5 w-5 text-[#1DA1F2]" />
+                  <span className="font-medium">Twitter</span>
+                  <ExternalLink className="w-4 h-4 ml-auto text-muted-foreground" />
+                </a>
+              )}
+              {person.socialLinks?.instagram && (
+                <a
+                  href={person.socialLinks.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Instagram className="h-5 w-5 text-[#E4405F]" />
+                  <span className="font-medium">Instagram</span>
+                  <ExternalLink className="w-4 h-4 ml-auto text-muted-foreground" />
+                </a>
+              )}
+              {person.socialLinks?.linkedin && (
+                <a
+                  href={person.socialLinks.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Linkedin className="h-5 w-5 text-[#0A66C2]" />
+                  <span className="font-medium">LinkedIn</span>
+                  <ExternalLink className="w-4 h-4 ml-auto text-muted-foreground" />
+                </a>
+              )}
+              {person.socialLinks?.github && (
+                <a
+                  href={person.socialLinks.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Github className="h-5 w-5" />
+                  <span className="font-medium">GitHub</span>
+                  <ExternalLink className="w-4 h-4 ml-auto text-muted-foreground" />
+                </a>
+              )}
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
   );
 } 
