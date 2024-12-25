@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from './auth-provider';
 import { Bell } from 'lucide-react';
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
+import { useConnections } from '@/hooks/use-connections';
 
 interface Notification {
   id: string;
@@ -21,7 +22,9 @@ interface Notification {
   fromUserId: string;
   fromUserName: string;
   read: boolean;
-  createdAt: Date;
+  createdAt: any;
+  connectionId?: string;
+  senderId?: string;
 }
 
 export default function Notifications() {
@@ -29,9 +32,15 @@ export default function Notifications() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { acceptConnectionRequest, cancelConnectionRequest } = useConnections(user?.uid || '');
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found in notifications component');
+      return;
+    }
+
+    console.log('Setting up notifications listener for user:', user.uid);
 
     // Subscribe to notifications
     const q = query(
@@ -39,19 +48,40 @@ export default function Notifications() {
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
+    console.log('Created notifications query:', q);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-      })) as Notification[];
+    try {
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        console.log('Received notifications snapshot. Metadata:', {
+          fromCache: snapshot.metadata.fromCache,
+          hasPendingWrites: snapshot.metadata.hasPendingWrites,
+          size: snapshot.size
+        });
+        
+        const notifs = snapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('Processing notification:', { id: doc.id, ...data });
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate(),
+          };
+        }) as Notification[];
 
-      setNotifications(notifs);
-      setUnreadCount(notifs.filter(n => !n.read).length);
-    });
+        console.log('Processed notifications:', notifs.length);
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter(n => !n.read).length);
+      }, (error) => {
+        console.error('Error in notifications snapshot:', error);
+      });
 
-    return () => unsubscribe();
+      return () => {
+        console.log('Cleaning up notifications listener');
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error('Error setting up notifications listener:', error);
+    }
   }, [user]);
 
   const markAsRead = async (notificationId: string) => {
@@ -62,22 +92,48 @@ export default function Notifications() {
 
   const handleNotificationClick = async (notification: Notification) => {
     await markAsRead(notification.id);
-
-    switch (notification.type) {
-      case 'connection_request':
-      case 'connection_accepted':
-        router.push(`/profile/${notification.fromUserId}`);
-        break;
-      case 'profile_update':
-        router.push(`/profile/${notification.fromUserId}`);
-        break;
-    }
+    router.push(`/profile/${notification.fromUserId}`);
   };
 
   const getNotificationText = (notification: Notification) => {
     switch (notification.type) {
       case 'connection_request':
-        return `${notification.fromUserName} sent you a connection request`;
+        return (
+          <div className="flex flex-col">
+            <p><span className="font-semibold">{notification.fromUserName}</span> sent you a connection request</p>
+            <div className="flex gap-2 mt-2">
+              <Button 
+                size="sm" 
+                variant="default" 
+                className="flex-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (notification.connectionId) {
+                    acceptConnectionRequest(notification.connectionId);
+                    markAsRead(notification.id);
+                  }
+                }}
+              >
+                Accept
+              </Button>
+              {notification.senderId === user?.uid && (
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  className="flex-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (notification.connectionId) {
+                      cancelConnectionRequest(notification.connectionId);
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+          </div>
+        );
       case 'connection_accepted':
         return `${notification.fromUserName} accepted your connection request`;
       case 'profile_update':
@@ -113,12 +169,12 @@ export default function Notifications() {
               }`}
               onClick={() => handleNotificationClick(notification)}
             >
-              <p className="text-sm font-medium">
+              <div className="w-full">
                 {getNotificationText(notification)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {notification.createdAt?.toLocaleDateString()} {notification.createdAt?.toLocaleTimeString()}
-              </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {notification.createdAt?.toLocaleDateString()} {notification.createdAt?.toLocaleTimeString()}
+                </p>
+              </div>
             </DropdownMenuItem>
           ))
         )}

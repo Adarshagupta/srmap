@@ -239,6 +239,27 @@ export default function ProfilePage({ params }: Props) {
   }
 
   if (error || !person) {
+    if (user && user.uid === params.id) {
+      return (
+        <div className="container max-w-4xl py-6">
+          <Card className="p-8 text-center">
+            <div className="max-w-md mx-auto space-y-4">
+              <UserCircle className="w-12 h-12 mx-auto text-muted-foreground" />
+              <h3 className="text-lg font-semibold">Complete Your Profile</h3>
+              <p className="text-muted-foreground">
+                Set up your profile to connect with other students and share your interests.
+              </p>
+              <Button 
+                onClick={() => router.push('/profile/edit')}
+              >
+                Create Profile
+              </Button>
+            </div>
+          </Card>
+        </div>
+      );
+    }
+
     return (
       <div className="container max-w-4xl py-6">
         <Card className="p-8 text-center">

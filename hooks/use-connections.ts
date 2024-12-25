@@ -73,27 +73,77 @@ export function useConnections(targetUserId: string) {
   }, [user, targetUserId]);
 
   const sendConnectionRequest = useCallback(async (receiverId: string) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found');
+      return;
+    }
 
     try {
+      console.log('Starting connection request process...');
+      console.log('Current user:', user.uid);
+      console.log('Receiver ID:', receiverId);
+
+      // Get sender's data for notification
       const senderDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!senderDoc.exists()) {
+        console.error('Sender document not found');
+        return;
+      }
       const senderData = senderDoc.data();
+      console.log('Sender data:', senderData);
       
-      await addDoc(collection(db, 'connections'), {
+      // Create connection document
+      const connectionData = {
         senderId: user.uid,
         receiverId,
         status: 'pending',
         participants: [user.uid, receiverId],
         createdAt: serverTimestamp(),
-      });
+        updatedAt: serverTimestamp(),
+      };
+      console.log('Creating connection with data:', connectionData);
+      
+      const connectionRef = await addDoc(collection(db, 'connections'), connectionData);
+      console.log('Created connection with ID:', connectionRef.id);
 
       // Create notification for receiver
-      await createNotification({
+      const receiverNotifData = {
         userId: receiverId,
         type: 'connection_request',
         fromUserId: user.uid,
         fromUserName: senderData?.name || 'A user',
-      });
+        read: false,
+        createdAt: serverTimestamp(),
+        connectionId: connectionRef.id,
+        senderId: user.uid
+      };
+      console.log('Creating receiver notification with data:', receiverNotifData);
+      
+      const receiverNotifRef = await addDoc(collection(db, 'notifications'), receiverNotifData);
+      console.log('Created receiver notification with ID:', receiverNotifRef.id);
+
+      // Create notification for sender
+      const senderNotifData = {
+        userId: user.uid,
+        type: 'connection_request',
+        fromUserId: receiverId,
+        fromUserName: 'Your connection request',
+        read: false,
+        createdAt: serverTimestamp(),
+        connectionId: connectionRef.id,
+        senderId: user.uid
+      };
+      console.log('Creating sender notification with data:', senderNotifData);
+      
+      const senderNotifRef = await addDoc(collection(db, 'notifications'), senderNotifData);
+      console.log('Created sender notification with ID:', senderNotifRef.id);
+
+      // Verify notifications were created
+      const receiverNotifDoc = await getDoc(receiverNotifRef);
+      const senderNotifDoc = await getDoc(senderNotifRef);
+      
+      console.log('Receiver notification exists:', receiverNotifDoc.exists());
+      console.log('Sender notification exists:', senderNotifDoc.exists());
 
       toast({
         title: "Success",
@@ -117,21 +167,39 @@ export function useConnections(targetUserId: string) {
       const connectionDoc = await getDoc(connectionRef);
       const connectionData = connectionDoc.data();
       
+      if (!connectionData) {
+        throw new Error('Connection not found');
+      }
+
       await updateDoc(connectionRef, {
         status: 'connected',
-        acceptedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
 
-      // Get sender's name
-      const senderDoc = await getDoc(doc(db, 'users', user.uid));
-      const senderData = senderDoc.data();
+      // Get accepter's name for notification
+      const accepterDoc = await getDoc(doc(db, 'users', user.uid));
+      const accepterData = accepterDoc.data();
 
-      // Create notification for sender
-      await createNotification({
-        userId: connectionData?.senderId,
+      // Delete existing connection request notifications
+      const oldNotificationsQuery = query(
+        collection(db, 'notifications'),
+        where('connectionId', '==', connectionId),
+        where('type', '==', 'connection_request')
+      );
+      const oldNotificationsSnapshot = await getDocs(oldNotificationsQuery);
+      const deletePromises = oldNotificationsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      // Create notification for the original sender
+      await addDoc(collection(db, 'notifications'), {
+        userId: connectionData.senderId,
         type: 'connection_accepted',
         fromUserId: user.uid,
-        fromUserName: senderData?.name || 'A user',
+        fromUserName: accepterData?.name || 'A user',
+        read: false,
+        createdAt: serverTimestamp(),
+        connectionId: connectionId,
+        senderId: connectionData.senderId
       });
 
       toast({
@@ -167,6 +235,40 @@ export function useConnections(targetUserId: string) {
     }
   }, [user, toast]);
 
+  const cancelConnectionRequest = useCallback(async (connectionId: string) => {
+    if (!user) return;
+
+    try {
+      const connectionRef = doc(db, 'connections', connectionId);
+      const connectionDoc = await getDoc(connectionRef);
+      const connectionData = connectionDoc.data();
+      
+      // Delete the connection document
+      await deleteDoc(connectionRef);
+
+      // Delete any related notifications
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('connectionId', '==', connectionId)
+      );
+      const notificationsSnapshot = await getDocs(notificationsQuery);
+      const deletePromises = notificationsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      toast({
+        title: "Success",
+        description: "Connection request cancelled",
+      });
+    } catch (error) {
+      console.error('Error cancelling connection request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel connection request. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [user, toast]);
+
   return {
     connectionStatus,
     loading,
@@ -174,5 +276,6 @@ export function useConnections(targetUserId: string) {
     sendConnectionRequest,
     acceptConnectionRequest,
     removeConnection,
+    cancelConnectionRequest,
   };
 } 
