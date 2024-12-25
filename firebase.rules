@@ -62,6 +62,28 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
     }
 
+    // Posts - users can read all posts but only edit their own
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+        request.resource.data.authorId == request.auth.uid;
+      allow update: if request.auth != null && 
+        (resource.data.authorId == request.auth.uid || isAdmin());
+      allow delete: if request.auth != null && 
+        (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // Comments on posts
+    match /posts/{postId}/comments/{commentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+        request.resource.data.authorId == request.auth.uid;
+      allow update: if request.auth != null && 
+        resource.data.authorId == request.auth.uid;
+      allow delete: if request.auth != null && 
+        (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if isAdmin();

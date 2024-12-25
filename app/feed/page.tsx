@@ -1,0 +1,349 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/components/auth-provider';
+import { useToast } from '@/components/ui/use-toast';
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  orderBy, 
+  onSnapshot,
+  serverTimestamp,
+  doc,
+  getDoc,
+  Timestamp
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { formatDistanceToNow } from 'date-fns';
+import { Heart, MessageCircle, Share2, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { usePostInteractions } from '@/hooks/use-post-interactions';
+
+interface Post {
+  id: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  createdAt: Timestamp;
+  likes: number;
+  comments: number;
+  likedBy?: string[];
+}
+
+interface Comment {
+  id: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  createdAt: Timestamp;
+}
+
+function PostCard({ post }: { post: Post }) {
+  const { user } = useAuth();
+  const [showComments, setShowComments] = useState(false);
+  const [commentContent, setCommentContent] = useState('');
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const { toggleLike, addComment, sharePost, commenting, liking } = usePostInteractions(post.id);
+  const hasLiked = post.likedBy?.includes(user?.uid || '');
+
+  useEffect(() => {
+    if (showComments) {
+      setLoadingComments(true);
+      const q = query(
+        collection(db, 'posts', post.id, 'comments'),
+        orderBy('createdAt', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const commentsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Comment[];
+        setComments(commentsData);
+        setLoadingComments(false);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [showComments, post.id]);
+
+  const handleAddComment = async () => {
+    if (!commentContent.trim()) return;
+    await addComment(commentContent);
+    setCommentContent('');
+  };
+
+  return (
+    <Card className="p-4">
+      <div className="space-y-4">
+        {/* Author Info */}
+        <div className="flex items-center gap-3">
+          <Link href={`/profile/${post.authorId}`}>
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={post.authorAvatar} />
+              <AvatarFallback>
+                {post.authorName.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+          <div>
+            <Link 
+              href={`/profile/${post.authorId}`}
+              className="font-semibold hover:underline"
+            >
+              {post.authorName}
+            </Link>
+            <p className="text-sm text-muted-foreground">
+              {formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })}
+            </p>
+          </div>
+        </div>
+
+        {/* Content */}
+        <p className="text-sm">{post.content}</p>
+
+        {/* Actions */}
+        <div className="flex items-center gap-4 pt-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn(
+              "text-muted-foreground",
+              hasLiked && "text-primary"
+            )}
+            onClick={toggleLike}
+            disabled={liking}
+          >
+            <Heart className={cn(
+              "w-4 h-4 mr-2",
+              hasLiked && "fill-current"
+            )} />
+            {post.likes}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground"
+            onClick={() => setShowComments(!showComments)}
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            {post.comments}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground"
+            onClick={sharePost}
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            Share
+          </Button>
+        </div>
+
+        {/* Comments Section */}
+        {showComments && (
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Write a comment..."
+                value={commentContent}
+                onChange={(e) => setCommentContent(e.target.value)}
+                rows={1}
+                className="resize-none"
+              />
+              <Button 
+                onClick={handleAddComment}
+                disabled={!commentContent.trim() || commenting}
+              >
+                {commenting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Post'
+                )}
+              </Button>
+            </div>
+
+            {loadingComments ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-2">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={comment.authorAvatar} />
+                      <AvatarFallback>
+                        {comment.authorName.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="bg-muted p-2 rounded-lg">
+                        <Link 
+                          href={`/profile/${comment.authorId}`}
+                          className="font-semibold hover:underline"
+                        >
+                          {comment.authorName}
+                        </Link>
+                        <p className="text-sm">{comment.content}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+export default function FeedPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [content, setContent] = useState('');
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'posts'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const postsData = await Promise.all(
+        snapshot.docs.map(async (docSnapshot) => {
+          const data = docSnapshot.data();
+          const authorDocRef = doc(db, 'users', data.authorId);
+          const authorDoc = await getDoc(authorDocRef);
+          const authorData = authorDoc.data();
+          
+          return {
+            id: docSnapshot.id,
+            ...data,
+            authorName: authorData?.name || 'Unknown User',
+            authorAvatar: authorData?.avatar,
+            createdAt: data.createdAt,
+          } as Post;
+        })
+      );
+
+      setPosts(postsData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const handlePost = async () => {
+    if (!user || !content.trim()) return;
+
+    try {
+      setPosting(true);
+      await addDoc(collection(db, 'posts'), {
+        content: content.trim(),
+        authorId: user.uid,
+        createdAt: serverTimestamp(),
+        likes: 0,
+        comments: 0,
+        likedBy: [],
+      });
+
+      setContent('');
+      toast({
+        title: "Posted successfully",
+      });
+    } catch (error) {
+      console.error('Error posting:', error);
+      toast({
+        title: "Error posting",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="container max-w-4xl py-6">
+        <Card className="p-6">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold">Join the Conversation</h2>
+            <p className="text-muted-foreground">
+              Sign in to view and share posts with your college community.
+            </p>
+            <Link href="/auth">
+              <Button>Sign In</Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container max-w-2xl py-6 space-y-6">
+      {/* Create Post */}
+      <Card className="p-4">
+        <div className="space-y-4">
+          <div className="flex items-start gap-4">
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={user.photoURL || undefined} />
+              <AvatarFallback>
+                {user.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <Textarea
+              placeholder="What's on your mind?"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="flex-1 resize-none"
+              rows={3}
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button 
+              onClick={handlePost} 
+              disabled={!content.trim() || posting}
+            >
+              {posting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Post
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Posts Feed */}
+      {loading ? (
+        <div className="flex justify-center p-4">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+} 

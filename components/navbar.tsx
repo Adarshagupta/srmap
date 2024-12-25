@@ -55,6 +55,12 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center justify-center flex-1 px-6">
           <div className="flex items-center space-x-6">
             <Link 
+              href="/feed" 
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Feed
+            </Link>
+            <Link 
               href="/events" 
               className="text-sm font-medium transition-colors hover:text-primary"
             >
