@@ -1,45 +1,24 @@
 import { NextResponse } from 'next/server';
-import { initializeApp, getApps, cert, ServiceAccount } from 'firebase-admin/app';
-import { getMessaging } from 'firebase-admin/messaging';
+import admin from 'firebase-admin';
 
 // Initialize Firebase Admin if not already initialized
-if (!getApps().length) {
-  const serviceAccount = {
-    type: "service_account",
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    clientId: process.env.FIREBASE_CLIENT_ID,
-    authUri: "https://accounts.google.com/o/oauth2/auth",
-    tokenUri: "https://oauth2.googleapis.com/token",
-    authProviderX509CertUrl: "https://www.googleapis.com/oauth2/v1/certs",
-    clientX509CertUrl: process.env.FIREBASE_CERT_URL
-  } as ServiceAccount;
-
-  // Check if required fields are present
-  if (!serviceAccount.projectId || !serviceAccount.privateKey || !serviceAccount.clientEmail) {
-    throw new Error('Missing required Firebase service account credentials');
-  }
-
-  try {
-    initializeApp({
-      credential: cert(serviceAccount)
-    });
-    console.log('Firebase Admin initialized successfully');
-  } catch (error) {
-    console.error('Error initializing Firebase Admin:', error);
-    throw error;
-  }
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
 }
 
 export async function POST(request: Request) {
   try {
-    const { token, title, body } = await request.json();
+    const { token, title, body, data } = await request.json();
 
-    if (!token || !title || !body) {
+    if (!token) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'FCM token is required' },
         { status: 400 }
       );
     }
@@ -49,15 +28,17 @@ export async function POST(request: Request) {
         title,
         body,
       },
+      data: data || {},
       token,
     };
 
-    const response = await getMessaging().send(message);
+    const response = await admin.messaging().send(message);
+    
     return NextResponse.json({ success: true, messageId: response });
   } catch (error) {
-    console.error('Error sending notification:', error);
+    console.error('Error sending push notification:', error);
     return NextResponse.json(
-      { error: 'Failed to send notification' },
+      { error: 'Failed to send push notification' },
       { status: 500 }
     );
   }

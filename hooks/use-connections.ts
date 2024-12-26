@@ -105,6 +105,7 @@ export function useConnections(targetUserId: string) {
         type: 'connection_request',
         fromUserId: user.uid,
         fromUserName: senderData?.name || 'A user',
+        connectionId: connectionRef.id,
       });
 
       toast({
@@ -158,6 +159,7 @@ export function useConnections(targetUserId: string) {
         type: 'connection_accepted',
         fromUserId: user.uid,
         fromUserName: accepterData?.name || 'A user',
+        connectionId: connectionId,
       });
 
       toast({

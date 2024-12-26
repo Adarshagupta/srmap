@@ -11,11 +11,13 @@ export async function createNotification({
   type,
   fromUserId,
   fromUserName,
+  connectionId,
 }: {
   userId: string;
   type: 'connection_request' | 'connection_accepted' | 'profile_update';
   fromUserId: string;
   fromUserName: string;
+  connectionId?: string;
 }) {
   try {
     // Get user's FCM token
@@ -28,6 +30,7 @@ export async function createNotification({
       type,
       fromUserId,
       fromUserName,
+      connectionId,
       read: false,
       createdAt: serverTimestamp(),
     });

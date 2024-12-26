@@ -2,12 +2,12 @@ importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyBxGPWeCoQzbkq1DQNGHr1MeTLbIrbnYmE",
+  authDomain: "srmap-93b6e.firebaseapp.com",
+  projectId: "srmap-93b6e",
+  storageBucket: "srmap-93b6e.firebasestorage.app",
+  messagingSenderId: "37171930820",
+  appId: "1:37171930820:web:8daa234e5da6077418cb91"
 });
 
 const messaging = firebase.messaging();
@@ -19,8 +19,9 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/icons/ios/ios-appicon-180-180.png',
-    badge: '/icons/ios/ios-appicon-180-180.png',
+    icon: '/logo.png',
+    badge: '/logo.png',
+    tag: payload.data?.type || 'notification',
     data: payload.data,
     actions: [
       {
@@ -39,7 +40,26 @@ self.addEventListener('notificationclick', (event) => {
 
   event.notification.close();
 
-  if (event.action === 'view' && event.notification.data?.url) {
-    clients.openWindow(event.notification.data.url);
+  // Navigate to the appropriate page based on notification type
+  const data = event.notification.data;
+  let url = '/';
+
+  if (data?.type === 'connection_request' || data?.type === 'connection_accepted') {
+    url = `/profile/${data.fromUserId}`;
+  } else if (data?.type === 'profile_update') {
+    url = `/profile/${data.userId}`;
   }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((windowClients) => {
+      // If a window is already open, focus it and navigate
+      for (const client of windowClients) {
+        if (client.url === url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // If no window is open, open a new one
+      return clients.openWindow(url);
+    })
+  );
 }); 
