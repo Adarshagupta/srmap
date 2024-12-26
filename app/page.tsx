@@ -2,6 +2,7 @@ import { Card } from '@/components/ui/card';
 import UpcomingEvents from '@/components/upcoming-events';
 import FeaturedUsers from '@/components/featured-users';
 import { CurrentMeal } from '@/components/current-meal';
+import { AskSrmAi } from '@/components/ask-srm-ai';
 import { BookOpen, Calendar, MapPin, Utensils, Users, Settings, User, Bell, Trophy, Newspaper } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -85,39 +86,64 @@ export default function Home() {
   return (
     <div className="space-y-6">
       {/* Hero Section */}
-      <div className="relative h-[200px] md:h-[300px] rounded-3xl overflow-hidden">
+      <div className="relative h-[250px] md:h-[300px] rounded-3xl overflow-hidden">
+        {/* Background Image and Overlay */}
         <div className="absolute inset-0">
           <Image
-            src="https://srmap.edu.in/wp-content/uploads/2017/03/1.jpg"
+            src="https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=2086&auto=format&fit=crop"
             alt="SRM AP Campus"
             fill
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/50 to-transparent dark:from-primary/80 dark:via-primary/40" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/70 to-transparent" />
+          
+          {/* Decorative Elements */}
+          <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-background/20 to-transparent" />
+          <div className="absolute top-1/2 right-0 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl" />
         </div>
 
+        {/* Content */}
         <div className="relative h-full flex flex-col justify-center p-6 md:p-10">
-          <div className="flex items-center gap-4 mb-4">
-            <Image
-              src="https://srmap.edu.in/wp-content/uploads/2019/11/SRMAP-Logo-2.png"
-              alt="SRM AP Logo"
-              width={60}
-              height={60}
-              className="rounded-lg bg-white/30 p-1 backdrop-blur-sm"
-            />
-            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-white max-w-2xl">
-              Welcome to SRM University AP
-            </h1>
-          </div>
-          <p className="text-base md:text-lg text-white/90 max-w-xl">
-            Experience excellence in education at our state-of-the-art campus. 
-            Your journey to success begins here.
-          </p>
-        </div>
+          <div className="max-w-3xl space-y-4">
+            {/* Logo and Title */}
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-white/10 backdrop-blur-md rounded-2xl">
+                <Image
+                  src="https://srmap.edu.in/wp-content/uploads/2019/11/SRMAP-Logo-2.png"
+                  alt="SRM AP Logo"
+                  width={50}
+                  height={50}
+                  className="rounded-xl"
+                />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-white">
+                  Welcome to SRM University AP
+                </h1>
+                <p className="text-base md:text-lg text-white/90 mt-2">
+                  Experience excellence in education at our state-of-the-art campus
+                </p>
+              </div>
+            </div>
 
-        <div className="absolute bottom-0 right-0 w-1/3 h-1/3 bg-white/10 backdrop-blur-3xl rounded-tl-full transform translate-y-1/4 translate-x-1/4" />
-        <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 backdrop-blur-xl rounded-full transform -translate-y-1/2 translate-x-1/2" />
+            {/* Quick Stats */}
+            <div className="grid grid-cols-4 gap-3 mt-4">
+              {[
+                { label: 'Students', value: '5000+' },
+                { label: 'Faculty', value: '250+' },
+                { label: 'Acres', value: '200+' },
+                { label: 'Partners', value: '100+' },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-white/10 backdrop-blur-md rounded-xl p-2 text-center">
+                  <div className="text-lg font-bold text-white">{stat.value}</div>
+                  <div className="text-xs text-white/70">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Quick Links Grid */}
@@ -226,6 +252,9 @@ export default function Home() {
           </Link>
         ))}
       </div>
+
+      {/* AI Assistant */}
+      <AskSrmAi />
     </div>
   );
 }
