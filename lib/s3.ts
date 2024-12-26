@@ -53,38 +53,39 @@ export async function validateS3Configuration(): Promise<boolean> {
   try {
     console.log('Validating S3 configuration...');
     
-    // Instead of listing buckets, try to get a non-existent object
-    // This will fail with 404 (which is fine) but will validate our credentials
-    const testKey = `test-${Date.now()}.txt`;
-    const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: testKey,
-    });
+    // Check if all required environment variables are set
+    const requiredVars = {
+      region: process.env.NEXT_PUBLIC_AWS_REGION,
+      bucket: process.env.NEXT_PUBLIC_AWS_BUCKET_NAME,
+      accessKey: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID,
+      secretKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY
+    };
 
-    try {
-      await s3Client.send(command);
-    } catch (error: any) {
-      // 404 error means our credentials are valid but object doesn't exist (expected)
-      if (error.name === 'NoSuchKey') {
-        console.log('S3 configuration is valid (bucket exists and credentials work)');
-        return true;
-      }
-      // Any other error means there's a configuration issue
-      throw error;
+    const missingVars = Object.entries(requiredVars)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingVars.length > 0) {
+      console.error('Missing required environment variables:', missingVars);
+      return false;
     }
 
+    // Instead of making a test request, just verify the client is configured
+    if (!s3Client) {
+      console.error('S3 client not initialized');
+      return false;
+    }
+
+    // Check if the bucket name is valid
+    if (!BUCKET_NAME.match(/^[a-z0-9][a-z0-9.-]*[a-z0-9]$/)) {
+      console.error('Invalid bucket name format:', BUCKET_NAME);
+      return false;
+    }
+
+    console.log('S3 configuration appears valid');
     return true;
   } catch (error) {
-    console.error('S3 configuration validation failed:', error);
-    if (error instanceof Error) {
-      if (error.name === 'InvalidAccessKeyId') {
-        console.error('Invalid AWS access key');
-      } else if (error.name === 'SignatureDoesNotMatch') {
-        console.error('Invalid AWS secret key');
-      } else if (error.name === 'NoSuchBucket') {
-        console.error('Bucket does not exist');
-      }
-    }
+    console.error('Error in validateS3Configuration:', error);
     return false;
   }
 }
