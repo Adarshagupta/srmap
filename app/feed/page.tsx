@@ -25,6 +25,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Heart, MessageCircle, Share2, Loader2, Image as ImageIcon, Send, MoreHorizontal, Link as LinkIcon } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { extractHashtags } from '@/lib/utils';
 import { usePostInteractions } from '@/hooks/use-post-interactions';
 import {
   DropdownMenu,
@@ -33,13 +34,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from 'next/navigation';
-
-// Function to extract hashtags from content
-export function extractHashtags(content: string): string[] {
-  const hashtagRegex = /#[\w\u0590-\u05ff]+/g;
-  const matches = content.match(hashtagRegex);
-  return matches ? matches : [];
-}
 
 interface Post {
   id: string;
