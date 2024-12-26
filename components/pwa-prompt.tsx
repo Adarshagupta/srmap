@@ -1,78 +1,75 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card } from './ui/card';
+import { Button } from './ui/button';
+import { X } from 'lucide-react';
 
 export function PWAPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    const handler = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowPrompt(true);
-    };
+    // Check if user has previously dismissed the prompt
+    const hasUserDismissed = localStorage.getItem('pwaPromptDismissed');
+    if (hasUserDismissed === 'true') {
+      return;
+    }
 
-    window.addEventListener('beforeinstallprompt', handler);
+    // Show prompt after a delay
+    const timer = setTimeout(() => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      if (!isStandalone) {
+        setShowPrompt(true);
+      }
+    }, 2000);
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-    };
+    return () => clearTimeout(timer);
   }, []);
 
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-      setShowPrompt(false);
-    }
+  const handleDismiss = () => {
+    setShowPrompt(false);
+    // Store user's preference
+    localStorage.setItem('pwaPromptDismissed', 'true');
   };
 
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-16 left-0 right-0 z-50 p-4 md:bottom-4 md:left-4 md:right-auto">
-      <Card className="relative w-full md:w-80">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Card className="relative max-w-lg w-full p-6">
         <Button
           variant="ghost"
           size="icon"
           className="absolute right-2 top-2"
-          onClick={() => setShowPrompt(false)}
+          onClick={handleDismiss}
         >
           <X className="h-4 w-4" />
         </Button>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Download className="h-5 w-5" />
-            Install App
-          </CardTitle>
-          <CardDescription>
-            Install SRM AP Connect for a better experience
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• Access offline</p>
-            <p>• Quick launch</p>
-            <p>• Better performance</p>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">Install SRM AP Connect</h2>
+            <p className="text-muted-foreground">
+              Install our app for a better experience. You'll get:
+            </p>
           </div>
-          <Button className="mt-4 w-full" onClick={handleInstall}>
-            Install Now
-          </Button>
-        </CardContent>
+
+          <ul className="space-y-2 text-muted-foreground">
+            <li>• Faster access to features</li>
+            <li>• Works offline</li>
+            <li>• Better performance</li>
+            <li>• Regular updates</li>
+          </ul>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="ghost" onClick={handleDismiss}>
+              Not now
+            </Button>
+            <Button onClick={handleDismiss}>
+              Install
+            </Button>
+          </div>
+        </div>
       </Card>
     </div>
   );

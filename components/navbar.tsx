@@ -4,7 +4,7 @@ import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuL
 import { ModeToggle } from "./mode-toggle";
 import Link from "next/link";
 import Image from "next/image";
-import { LogOut, Settings, User, Shield, Menu } from "lucide-react";
+import { LogOut, Settings, User, Shield, Menu, Download } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "./auth-provider";
 import { auth } from "@/lib/firebase";
@@ -25,6 +25,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import Notifications from './notifications';
+import { useState, useEffect } from "react";
 
 // List of admin emails
 const ADMIN_EMAILS = ['admin@srmap.edu.in'];
@@ -32,6 +33,28 @@ const ADMIN_EMAILS = ['admin@srmap.edu.in'];
 export default function Navbar() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [showInstallButton, setShowInstallButton] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallButton(false);
+    }
+  };
 
   const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
 
@@ -65,6 +88,16 @@ export default function Navbar() {
                 <SheetTitle>Menu</SheetTitle>
               </SheetHeader>
               <div className="flex flex-col gap-4 mt-6">
+                {showInstallButton && (
+                  <Button 
+                    variant="ghost" 
+                    className="justify-start px-0 font-medium flex items-center gap-2"
+                    onClick={handleInstall}
+                  >
+                    <Download className="h-4 w-4" />
+                    Install App
+                  </Button>
+                )}
                 <Link 
                   href="/feed" 
                   className="flex items-center text-sm font-medium transition-colors hover:text-primary"
@@ -181,6 +214,16 @@ export default function Navbar() {
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 ml-auto">
           {user && <Notifications />}
+          {showInstallButton && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleInstall}
+              title="Install App"
+            >
+              <Download className="h-5 w-5" />
+            </Button>
+          )}
           <ModeToggle />
           {user ? (
             <div className="hidden md:block">

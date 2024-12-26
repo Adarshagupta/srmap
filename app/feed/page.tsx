@@ -16,7 +16,9 @@ import {
   serverTimestamp,
   doc,
   getDoc,
-  Timestamp
+  Timestamp,
+  writeBatch,
+  increment
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatDistanceToNow } from 'date-fns';
@@ -30,6 +32,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useRouter } from 'next/navigation';
+
+// Function to extract hashtags from content
+export function extractHashtags(content: string): string[] {
+  const hashtagRegex = /#[\w\u0590-\u05ff]+/g;
+  const matches = content.match(hashtagRegex);
+  return matches ? matches : [];
+}
 
 interface Post {
   id: string;
@@ -41,6 +51,7 @@ interface Post {
   likes: number;
   comments: number;
   likedBy?: string[];
+  hashtags: string[];
 }
 
 interface Comment {
@@ -58,14 +69,25 @@ function CreatePostCard() {
   const [content, setContent] = useState('');
   const [posting, setPosting] = useState(false);
   const [focused, setFocused] = useState(false);
+  const router = useRouter();
 
   const handlePost = async () => {
-    if (!user || !content.trim()) return;
+    if (!user || !content.trim()) {
+      toast({
+        title: "Error posting",
+        description: "Please enter some content",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setPosting(true);
       const timestamp = serverTimestamp();
-      await addDoc(collection(db, 'posts'), {
+      const hashtags = extractHashtags(content);
+      console.log('Extracted hashtags:', hashtags); // Debug log
+
+      const postRef = await addDoc(collection(db, 'posts'), {
         content: content.trim(),
         authorId: user.uid,
         authorName: user.displayName || 'Anonymous',
@@ -74,7 +96,28 @@ function CreatePostCard() {
         likes: 0,
         comments: 0,
         likedBy: [],
+        hashtags: hashtags, // Store the full hashtag strings
       });
+
+      // Update hashtags collection
+      if (hashtags.length > 0) {
+        try {
+          const batch = writeBatch(db);
+          hashtags.forEach((tag) => {
+            // Use the full hashtag string for consistency
+            const hashtagRef = doc(db, 'hashtags', tag.toLowerCase());
+            batch.set(hashtagRef, {
+              tag: tag.toLowerCase(),
+              count: increment(1),
+              lastUsed: serverTimestamp(),
+            }, { merge: true });
+          });
+          await batch.commit();
+        } catch (hashtagError) {
+          console.error('Error updating hashtags:', hashtagError);
+          // Continue even if hashtag update fails
+        }
+      }
 
       setContent('');
       toast({
@@ -165,13 +208,45 @@ function CreatePostCard() {
   );
 }
 
-function PostCard({ post }: { post: Post }) {
+// Helper function to render content with clickable hashtags
+export function RenderContent({ content }: { content: string }) {
+  const router = useRouter();
+  const parts = content.split(/(#[\w\u0590-\u05ff]+)/g);
+
+  const handleHashtagClick = (e: React.MouseEvent, tag: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const cleanTag = tag.slice(1).toLowerCase(); // Remove # and convert to lowercase
+    router.push(`/hashtag/${cleanTag}`);
+  };
+
+  return (
+    <span className="break-words">
+      {parts.map((part, index) => {
+        if (part.startsWith('#')) {
+          return (
+            <button
+              key={index}
+              onClick={(e) => handleHashtagClick(e, part)}
+              className="text-primary hover:underline font-medium inline-block"
+            >
+              {part}
+            </button>
+          );
+        }
+        return <span key={index}>{part}</span>;
+      })}
+    </span>
+  );
+}
+
+export function PostCard({ post }: { post: Post }) {
   const { user } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const [commentContent, setCommentContent] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
-  const { toggleLike, addComment, sharePost, deletePost, commenting, liking } = usePostInteractions(post.id);
+  const { toggleLike, addComment, sharePost, deletePost, deleteComment, commenting, liking, deletingCommentId } = usePostInteractions(post.id);
   const hasLiked = post.likedBy?.includes(user?.uid || '');
 
   useEffect(() => {
@@ -199,6 +274,10 @@ function PostCard({ post }: { post: Post }) {
     if (!commentContent.trim()) return;
     await addComment(commentContent);
     setCommentContent('');
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    await deleteComment(commentId);
   };
 
   return (
@@ -247,7 +326,7 @@ function PostCard({ post }: { post: Post }) {
               </DropdownMenu>
             </div>
             <div className="mt-2 text-[15px] leading-normal">
-              {post.content}
+              <RenderContent content={post.content} />
             </div>
             <div className="flex items-center gap-6 mt-3">
               <Button 
@@ -334,18 +413,47 @@ function PostCard({ post }: { post: Post }) {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <div className="text-sm">
-                        <Link 
-                          href={`/profile/${comment.authorId}`}
-                          className="font-semibold hover:underline"
-                        >
-                          {comment.authorName}
-                        </Link>
-                        <span className="text-muted-foreground ml-2">
-                          {formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true })}
-                        </span>
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <Link 
+                            href={`/profile/${comment.authorId}`}
+                            className="font-semibold hover:underline"
+                          >
+                            {comment.authorName}
+                          </Link>
+                          <span className="text-muted-foreground ml-2">
+                            {comment.createdAt?.toDate ? 
+                              formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : 
+                              'Just now'
+                            }
+                          </span>
+                        </div>
+                        {user?.uid === comment.authorId && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                {deletingCommentId === comment.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <MoreHorizontal className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="text-destructive focus:text-destructive"
+                                disabled={deletingCommentId === comment.id}
+                              >
+                                {deletingCommentId === comment.id ? "Deleting..." : "Delete comment"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
-                      <p className="text-sm mt-1">{comment.content}</p>
+                      <div className="text-sm mt-1">
+                        <RenderContent content={comment.content} />
+                      </div>
                     </div>
                   </div>
                 ))}

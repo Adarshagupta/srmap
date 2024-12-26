@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import UpcomingEvents from '@/components/upcoming-events';
+import FeaturedUsers from '@/components/featured-users';
 import { CurrentMeal } from '@/components/current-meal';
 import { BookOpen, Calendar, MapPin, Utensils, Users, Settings, User, Bell, Trophy, Newspaper } from 'lucide-react';
 import Link from 'next/link';
@@ -177,6 +178,31 @@ export default function Home() {
             </Link>
           </div>
           <UpcomingEvents />
+        </div>
+      </div>
+
+      {/* Featured Users Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              People You May Know
+            </h2>
+            <p className="text-muted-foreground">Connect with your college community</p>
+          </div>
+          <Link 
+            href="/discover" 
+            className="text-sm text-purple-600 hover:text-pink-600 transition-colors hover:underline"
+          >
+            View all
+          </Link>
+        </div>
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-500/5 dark:to-pink-500/5 rounded-2xl p-0.5">
+          <div className="bg-background rounded-2xl">
+            <div className="p-6">
+              <FeaturedUsers />
+            </div>
+          </div>
         </div>
       </div>
 

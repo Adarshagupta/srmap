@@ -13,10 +13,10 @@ import {
   getDoc,
   deleteDoc,
   query,
-  getDocs
+  getDocs,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/components/auth-provider';
 
 interface Comment {
@@ -28,11 +28,18 @@ interface Comment {
   createdAt: any;
 }
 
+// Function to extract hashtags from content
+function extractHashtags(content: string): string[] {
+  const hashtagRegex = /#[\w\u0590-\u05ff]+/g;
+  return content.match(hashtagRegex) || [];
+}
+
 export function usePostInteractions(postId: string) {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [commenting, setCommenting] = useState(false);
   const [liking, setLiking] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
 
   const toggleLike = useCallback(async () => {
     if (!user) return;
@@ -49,21 +56,12 @@ export function usePostInteractions(postId: string) {
         likedBy: hasLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
         likes: increment(hasLiked ? -1 : 1)
       });
-
-      toast({
-        title: hasLiked ? "Post unliked" : "Post liked",
-      });
     } catch (error) {
       console.error('Error toggling like:', error);
-      toast({
-        title: "Error",
-        description: "Failed to like post. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setLiking(false);
     }
-  }, [user, postId, toast]);
+  }, [user, postId]);
 
   const addComment = useCallback(async (content: string) => {
     if (!user || !content.trim()) return;
@@ -71,56 +69,51 @@ export function usePostInteractions(postId: string) {
     try {
       setCommenting(true);
       const postRef = doc(db, 'posts', postId);
-      const userRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.data();
-
+      const hashtags = extractHashtags(content);
+      
       const commentRef = await addDoc(collection(db, 'posts', postId, 'comments'), {
         content: content.trim(),
         authorId: user.uid,
-        authorName: userData?.name || 'Unknown User',
-        authorAvatar: userData?.avatar,
+        authorName: user.displayName || 'Anonymous',
+        authorAvatar: user.photoURL,
         createdAt: serverTimestamp(),
+        hashtags: hashtags,
       });
 
       await updateDoc(postRef, {
         comments: increment(1)
       });
 
-      toast({
-        title: "Comment added",
-      });
+      // Update hashtags collection for search
+      if (hashtags.length > 0) {
+        const batch = writeBatch(db);
+        hashtags.forEach(async (tag) => {
+          const hashtagRef = doc(db, 'hashtags', tag.slice(1).toLowerCase());
+          batch.set(hashtagRef, {
+            tag: tag.slice(1).toLowerCase(),
+            count: increment(1),
+            lastUsed: serverTimestamp(),
+          }, { merge: true });
+        });
+        await batch.commit();
+      }
 
       return commentRef.id;
     } catch (error) {
       console.error('Error adding comment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add comment. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setCommenting(false);
     }
-  }, [user, postId, toast]);
+  }, [user, postId]);
 
   const sharePost = useCallback(async () => {
     try {
       const postUrl = `${window.location.origin}/feed?post=${postId}`;
       await navigator.clipboard.writeText(postUrl);
-      toast({
-        title: "Link copied!",
-        description: "Post link has been copied to clipboard",
-      });
     } catch (error) {
       console.error('Error sharing post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to copy link. Please try again.",
-        variant: "destructive",
-      });
     }
-  }, [postId, toast]);
+  }, [postId]);
 
   const deletePost = useCallback(async () => {
     if (!user) return;
@@ -143,27 +136,49 @@ export function usePostInteractions(postId: string) {
 
       // Delete the post document
       await deleteDoc(postRef);
-
-      toast({
-        title: "Success",
-        description: "Post deleted successfully",
-      });
     } catch (error) {
       console.error('Error deleting post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete post. Please try again.",
-        variant: "destructive",
-      });
     }
-  }, [user, postId, toast]);
+  }, [user, postId]);
+
+  const deleteComment = useCallback(async (commentId: string) => {
+    if (!user) return;
+
+    try {
+      setDeletingCommentId(commentId);
+      const commentRef = doc(db, 'posts', postId, 'comments', commentId);
+      const commentDoc = await getDoc(commentRef);
+      
+      if (!commentDoc.exists()) {
+        throw new Error('Comment not found');
+      }
+
+      const commentData = commentDoc.data();
+      if (commentData?.authorId !== user.uid) {
+        throw new Error('Not authorized to delete this comment');
+      }
+
+      await deleteDoc(commentRef);
+      
+      const postRef = doc(db, 'posts', postId);
+      await updateDoc(postRef, {
+        comments: increment(-1)
+      });
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+    } finally {
+      setDeletingCommentId(null);
+    }
+  }, [user, postId]);
 
   return {
     toggleLike,
     addComment,
     sharePost,
     deletePost,
+    deleteComment,
     commenting,
     liking,
+    deletingCommentId,
   };
 } 

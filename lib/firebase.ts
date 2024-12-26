@@ -1,16 +1,12 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { 
   getFirestore, 
-  enableIndexedDbPersistence,
-  getDoc,
-  doc,
-  collection,
-  getDocs,
-  query,
-  where,
-  onSnapshot,
+  Firestore,
   initializeFirestore,
-  CACHE_SIZE_UNLIMITED
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  memoryLocalCache,
+  type FirestoreSettings
 } from 'firebase/firestore';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getAnalytics, isSupported } from 'firebase/analytics';
@@ -28,24 +24,31 @@ const firebaseConfig = {
 // Initialize Firebase
 let app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize Firestore with settings for better offline support
-const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED
-});
+// Initialize Firestore with appropriate cache settings
+let db: Firestore;
 
-// Enable offline persistence
-try {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      // Multiple tabs open, persistence can only be enabled in one tab at a time.
-      console.warn('Multiple tabs open, persistence disabled');
-    } else if (err.code === 'unimplemented') {
-      // The current browser doesn't support persistence
-      console.warn('Persistence not supported by browser');
-    }
-  });
-} catch (err) {
-  console.warn('Error enabling persistence:', err);
+// Check if localStorage is available (indicates browser environment with IndexedDB support)
+const hasLocalStorage = typeof window !== 'undefined' && window.localStorage !== undefined;
+
+if (hasLocalStorage) {
+  try {
+    // Try to initialize with persistent cache
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    } as FirestoreSettings);
+  } catch (err) {
+    console.warn('Persistent cache not supported, falling back to memory cache:', err);
+    db = initializeFirestore(app, {
+      localCache: memoryLocalCache()
+    } as FirestoreSettings);
+  }
+} else {
+  // Use memory cache for environments without localStorage
+  db = initializeFirestore(app, {
+    localCache: memoryLocalCache()
+  } as FirestoreSettings);
 }
 
 const auth = getAuth(app);
