@@ -79,10 +79,6 @@ export function useConnections(targetUserId: string) {
     }
 
     try {
-      console.log('Starting connection request process...');
-      console.log('Current user:', user.uid);
-      console.log('Receiver ID:', receiverId);
-
       // Get sender's data for notification
       const senderDoc = await getDoc(doc(db, 'users', user.uid));
       if (!senderDoc.exists()) {
@@ -90,7 +86,6 @@ export function useConnections(targetUserId: string) {
         return;
       }
       const senderData = senderDoc.data();
-      console.log('Sender data:', senderData);
       
       // Create connection document
       const connectionData = {
@@ -101,49 +96,16 @@ export function useConnections(targetUserId: string) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-      console.log('Creating connection with data:', connectionData);
       
       const connectionRef = await addDoc(collection(db, 'connections'), connectionData);
-      console.log('Created connection with ID:', connectionRef.id);
 
-      // Create notification for receiver
-      const receiverNotifData = {
+      // Create notification for receiver using the createNotification function
+      await createNotification({
         userId: receiverId,
         type: 'connection_request',
         fromUserId: user.uid,
         fromUserName: senderData?.name || 'A user',
-        read: false,
-        createdAt: serverTimestamp(),
-        connectionId: connectionRef.id,
-        senderId: user.uid
-      };
-      console.log('Creating receiver notification with data:', receiverNotifData);
-      
-      const receiverNotifRef = await addDoc(collection(db, 'notifications'), receiverNotifData);
-      console.log('Created receiver notification with ID:', receiverNotifRef.id);
-
-      // Create notification for sender
-      const senderNotifData = {
-        userId: user.uid,
-        type: 'connection_request',
-        fromUserId: receiverId,
-        fromUserName: 'Your connection request',
-        read: false,
-        createdAt: serverTimestamp(),
-        connectionId: connectionRef.id,
-        senderId: user.uid
-      };
-      console.log('Creating sender notification with data:', senderNotifData);
-      
-      const senderNotifRef = await addDoc(collection(db, 'notifications'), senderNotifData);
-      console.log('Created sender notification with ID:', senderNotifRef.id);
-
-      // Verify notifications were created
-      const receiverNotifDoc = await getDoc(receiverNotifRef);
-      const senderNotifDoc = await getDoc(senderNotifRef);
-      
-      console.log('Receiver notification exists:', receiverNotifDoc.exists());
-      console.log('Sender notification exists:', senderNotifDoc.exists());
+      });
 
       toast({
         title: "Success",
@@ -191,15 +153,11 @@ export function useConnections(targetUserId: string) {
       await Promise.all(deletePromises);
 
       // Create notification for the original sender
-      await addDoc(collection(db, 'notifications'), {
+      await createNotification({
         userId: connectionData.senderId,
         type: 'connection_accepted',
         fromUserId: user.uid,
         fromUserName: accepterData?.name || 'A user',
-        read: false,
-        createdAt: serverTimestamp(),
-        connectionId: connectionId,
-        senderId: connectionData.senderId
       });
 
       toast({

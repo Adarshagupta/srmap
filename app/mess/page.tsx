@@ -1,15 +1,25 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Clock, UtensilsCrossed, Coffee, ChefHat, Timer, CalendarDays, WifiOff } from 'lucide-react';
+import { Loader2, Clock, UtensilsCrossed, Coffee, ChefHat, Timer, CalendarDays, WifiOff, ChevronDown } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+// Define type for days
+type Day = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
+
+const DAYS: Day[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 // Meal timings in 24-hour format (IST)
 const MEAL_TIMINGS = {
@@ -89,9 +99,34 @@ function getTimeUntilNextMeal() {
   };
 }
 
+// Format day name to be more readable
+function formatDayName(day: 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday') {
+  return day.charAt(0).toUpperCase() + day.slice(1);
+}
+
+// Get current day as Day type
+function getCurrentDay(): Day {
+  return DAYS[getCurrentIndianTime().getDay()];
+}
+
+// Get tomorrow as Day type
+function getTomorrowDay(): Day {
+  return DAYS[(getCurrentIndianTime().getDay() + 1) % 7];
+}
+
+// Get day name with "Today" or "Tomorrow" if applicable
+function getDayLabel(day: Day) {
+  const today = getCurrentDay();
+  const tomorrow = getTomorrowDay();
+  
+  if (day === today) return 'Today';
+  if (day === tomorrow) return 'Tomorrow';
+  return formatDayName(day);
+}
+
 export default function MessPage() {
   const [selectedMess, setSelectedMess] = useState('national');
-  const [selectedDay, setSelectedDay] = useState(DAYS[getCurrentIndianTime().getDay()]);
+  const [selectedDay, setSelectedDay] = useState<Day>(getCurrentDay());
   const [selectedMeal, setSelectedMeal] = useState(getCurrentMeal());
   const [menu, setMenu] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -127,7 +162,7 @@ export default function MessPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const fetchMenu = async () => {
+  const fetchMenu = useCallback(async () => {
     try {
       const menuRef = collection(db, 'mess-menus');
       const menuQuery = query(menuRef, where('id', '==', `${selectedMess}-${selectedDay}`));
@@ -135,7 +170,8 @@ export default function MessPage() {
       // First try to get from cache
       const snapshot = await getDocs(menuQuery);
       if (!snapshot.empty) {
-        setMenu(snapshot.docs[0].data());
+        const menuData = snapshot.docs[0].data();
+        setMenu(menuData);
         setLoading(false);
       }
 
@@ -178,7 +214,6 @@ export default function MessPage() {
         }
       );
 
-
       return unsubscribe;
     } catch (error) {
       console.error('Error in fetchMenu:', error);
@@ -191,7 +226,7 @@ export default function MessPage() {
         setMenu(JSON.parse(cachedData));
       }
     }
-  };
+  }, [selectedMess, selectedDay, isOffline, toast]);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -207,7 +242,7 @@ export default function MessPage() {
         unsubscribe();
       }
     };
-  }, [selectedMess, selectedDay]);
+  }, [selectedMess, selectedDay, fetchMenu]);
 
   if (loading) {
     return (
@@ -220,11 +255,12 @@ export default function MessPage() {
   const MealIcon = MEAL_TIMINGS[selectedMeal as keyof typeof MEAL_TIMINGS].icon;
 
   return (
-    <div className="container max-w-4xl py-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Mess Menu</h1>
-          <p className="text-muted-foreground mt-1">
+    <div className="container max-w-7xl mx-auto space-y-6">
+      {/* Header Section */}
+      <div className="space-y-6">
+        <div className="flex-1 space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Mess Menu</h1>
+          <p className="text-muted-foreground">
             {isOffline ? (
               <span className="flex items-center gap-2">
                 <WifiOff className="h-4 w-4" />
@@ -236,119 +272,116 @@ export default function MessPage() {
           </p>
         </div>
 
-        <Card className="border-primary/20">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <Timer className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">{nextMeal.meal} in {nextMeal.countdown}</p>
-              <p className="text-xs text-muted-foreground">Starts at {nextMeal.time}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              Select Day
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {DAYS.map((day) => (
-                <Badge
-                  key={day}
-                  variant={selectedDay === day ? "default" : "outline"}
-                  className="capitalize cursor-pointer"
-                  onClick={() => setSelectedDay(day)}
-                >
-                  {day.slice(0, 3)}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <UtensilsCrossed className="h-4 w-4" />
-              Select Mess
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Badge
-                variant={selectedMess === 'national' ? "default" : "outline"}
-                className="flex-1 justify-center cursor-pointer"
-                onClick={() => setSelectedMess('national')}
-              >
-                National
-              </Badge>
-              <Badge
-                variant={selectedMess === 'international' ? "default" : "outline"}
-                className="flex-1 justify-center cursor-pointer"
-                onClick={() => setSelectedMess('international')}
-              >
-                International
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="relative overflow-hidden">
-        <div className="absolute right-4 top-4 p-2 bg-primary/10 rounded-full">
-          <MealIcon className="h-5 w-5 text-primary" />
-        </div>
-        
-        <CardHeader>
-          <CardTitle>Today's Menu</CardTitle>
-        </CardHeader>
-
-        <CardContent className="pb-6">
-          <Tabs value={selectedMeal} onValueChange={setSelectedMeal}>
-            <TabsList className="w-full justify-start mb-4">
-              <TabsTrigger value="breakfast" className="flex gap-2">
-                <Coffee className="h-4 w-4" />
-                Breakfast
-              </TabsTrigger>
-              <TabsTrigger value="lunch" className="flex gap-2">
-                <UtensilsCrossed className="h-4 w-4" />
-                Lunch
-              </TabsTrigger>
-              <TabsTrigger value="dinner" className="flex gap-2">
-                <ChefHat className="h-4 w-4" />
-                Dinner
-              </TabsTrigger>
+        {/* Quick Actions */}
+        <div className="grid gap-4">
+          {/* Mess Selection */}
+          <Tabs 
+            value={selectedMess} 
+            onValueChange={setSelectedMess}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="national">National Mess</TabsTrigger>
+              <TabsTrigger value="international">International Mess</TabsTrigger>
             </TabsList>
-
-            {['breakfast', 'lunch', 'dinner'].map((meal) => (
-              <TabsContent key={meal} value={meal}>
-                {menu && menu[meal] ? (
-                  <ul className="space-y-2">
-                    {menu[meal].map((item: string, index: number) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <span className="text-primary">•</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-center py-8">
-                    <UtensilsCrossed className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No menu available for this meal</p>
-                  </div>
-                )}
-              </TabsContent>
-            ))}
           </Tabs>
+
+          {/* Meal Selection */}
+          <Tabs 
+            value={selectedMeal} 
+            onValueChange={setSelectedMeal}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              {Object.entries(MEAL_TIMINGS).map(([meal, { icon: Icon }]) => (
+                <TabsTrigger 
+                  key={meal} 
+                  value={meal}
+                  className="flex items-center gap-2"
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="capitalize">{meal}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+
+          {/* Day Selection */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border bg-background hover:bg-accent transition-colors">
+                <CalendarDays className="h-4 w-4" />
+                <span className="capitalize">{getDayLabel(selectedDay)}</span>
+                <ChevronDown className="h-3 w-3 opacity-50 ml-auto" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              {DAYS.map((day) => (
+                <DropdownMenuItem
+                  key={day}
+                  className={cn(
+                    "capitalize cursor-pointer",
+                    selectedDay === day && "bg-primary/10"
+                  )}
+                  onClick={() => {
+                    setSelectedDay(day);
+                    setLoading(true);
+                  }}
+                >
+                  {getDayLabel(day)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Next Meal Timer */}
+      <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-background rounded-2xl">
+              <Timer className="h-6 w-6 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-semibold text-lg">Next Meal</h3>
+              <p className="text-base text-muted-foreground">
+                {nextMeal.meal} in {nextMeal.countdown}
+              </p>
+              <p className="text-sm text-primary font-medium">
+                Starts at {nextMeal.time}
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Menu Content */}
+      <div className="grid gap-4">
+        {menu?.[selectedMeal] ? (
+          menu[selectedMeal].map((item: string, index: number) => (
+            <div 
+              key={index}
+              className="flex items-center gap-3 p-4 rounded-xl bg-card hover:bg-muted/50 transition-colors border"
+            >
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+              <span className="text-sm md:text-base">{item}</span>
+            </div>
+          ))
+        ) : (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <UtensilsCrossed className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <p className="text-lg text-muted-foreground text-center">
+                No menu available for {selectedMeal}
+              </p>
+              <p className="text-sm text-muted-foreground/80 text-center mt-1">
+                Please check back later or try a different meal
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
