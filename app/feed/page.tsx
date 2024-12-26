@@ -27,6 +27,7 @@ import { Heart, MessageCircle, Share2, Loader2, Image as ImageIcon, Send, MoreHo
 import { cn } from '@/lib/utils';
 import { extractHashtags } from '@/lib/utils';
 import { PostCard } from '@/components/post-card';
+import { PostImageUpload } from '@/components/post-image-upload';
 
 interface Post {
   id: string;
@@ -39,67 +40,66 @@ interface Post {
   comments: number;
   likedBy?: string[];
   hashtags: string[];
+  imageUrl?: string;
 }
 
 function CreatePostCard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [content, setContent] = useState('');
+  const [imageUrl, setImageUrl] = useState<string>();
   const [posting, setPosting] = useState(false);
   const [focused, setFocused] = useState(false);
   const router = useRouter();
 
+  if (!user) return null;
+
   const handlePost = async () => {
-    if (!user || !content.trim()) {
-      toast({
-        title: "Error posting",
-        description: "Please enter some content",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!content.trim()) return;
 
     try {
       setPosting(true);
-      const timestamp = serverTimestamp();
-      const hashtags = extractHashtags(content);
-      console.log('Extracted hashtags:', hashtags); // Debug log
 
-      const postRef = await addDoc(collection(db, 'posts'), {
+      // Get user data
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+
+      if (!userData) {
+        toast({
+          title: "Error",
+          description: "User profile not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Extract hashtags
+      const hashtags = extractHashtags(content);
+
+      // Create post
+      const postData = {
         content: content.trim(),
         authorId: user.uid,
-        authorName: user.displayName || 'Anonymous',
-        authorAvatar: user.photoURL || null,
-        createdAt: timestamp,
+        authorName: userData.name || user.displayName || 'Anonymous',
+        authorAvatar: userData.avatar || user.photoURL || null,
+        createdAt: serverTimestamp(),
         likes: 0,
         comments: 0,
         likedBy: [],
-        hashtags: hashtags, // Store the full hashtag strings
-      });
+        hashtags,
+        imageUrl,
+      };
 
-      // Update hashtags collection
-      if (hashtags.length > 0) {
-        try {
-          const batch = writeBatch(db);
-          hashtags.forEach((tag) => {
-            // Use the full hashtag string for consistency
-            const hashtagRef = doc(db, 'hashtags', tag.toLowerCase());
-            batch.set(hashtagRef, {
-              tag: tag.toLowerCase(),
-              count: increment(1),
-              lastUsed: serverTimestamp(),
-            }, { merge: true });
-          });
-          await batch.commit();
-        } catch (hashtagError) {
-          console.error('Error updating hashtags:', hashtagError);
-          // Continue even if hashtag update fails
-        }
-      }
+      await addDoc(collection(db, 'posts'), postData);
 
+      // Reset form
       setContent('');
+      setImageUrl(undefined);
+      setFocused(false);
+
       toast({
-        title: "Posted successfully",
+        title: "Success",
+        description: "Post created successfully",
       });
     } catch (error) {
       console.error('Error posting:', error);
@@ -110,79 +110,67 @@ function CreatePostCard() {
       });
     } finally {
       setPosting(false);
-      setFocused(false);
     }
   };
 
   return (
-    <div className="border-b">
-      <div className="flex gap-3 p-4">
-        <Avatar className="w-11 h-11">
-          <AvatarImage src={user?.photoURL || undefined} />
+    <Card className="p-4">
+      <div className="flex gap-3">
+        <Avatar>
+          <AvatarImage src={user.photoURL || undefined} />
           <AvatarFallback>
-            {user?.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
+            {user.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1 min-w-0 space-y-4">
+        <div className="flex-1 space-y-4">
           <Textarea
-            placeholder="What's happening?"
+            placeholder="What's on your mind?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onFocus={() => setFocused(true)}
-            className={cn(
-              "resize-none w-full border-none bg-transparent focus-visible:ring-0 p-0 placeholder:text-muted-foreground/60 min-h-[56px] transition-all duration-200",
-              focused ? "text-lg" : "text-base"
-            )}
+            className="min-h-[100px] resize-none"
           />
-          <div className={cn(
-            "grid grid-rows-[0fr] transition-all duration-200",
-            focused && "grid-rows-[1fr]"
-          )}>
-            <div className="overflow-hidden">
-              <div className="pt-4 border-t">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex -ml-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-primary hover:text-primary hover:bg-primary/10"
-                    >
-                      <ImageIcon className="w-5 h-5" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-primary hover:text-primary hover:bg-primary/10"
-                    >
-                      <LinkIcon className="w-5 h-5" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {content.length > 0 && (
-                      <span className="text-sm text-muted-foreground">
-                        {content.length}/280
-                      </span>
+
+          {(focused || imageUrl) && (
+            <div className="space-y-4">
+              <PostImageUpload
+                userId={user.uid}
+                onUploadComplete={setImageUrl}
+                onRemove={() => setImageUrl(undefined)}
+                currentImageUrl={imageUrl}
+              />
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <ImageIcon className="h-5 w-5" />
+                  <span className="text-sm">Add an image to your post</span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {content.length > 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      {content.length}/280
+                    </span>
+                  )}
+                  <Button 
+                    onClick={handlePost} 
+                    disabled={!content.trim() || posting || content.length > 280}
+                    className="rounded-full px-4 py-2"
+                    size="sm"
+                  >
+                    {posting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Post"
                     )}
-                    <Button 
-                      onClick={handlePost} 
-                      disabled={!content.trim() || posting || content.length > 280}
-                      className="rounded-full px-4 py-2"
-                      size="sm"
-                    >
-                      {posting ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        "Post"
-                      )}
-                    </Button>
-                  </div>
+                  </Button>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -243,8 +231,8 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto divide-y">
-      <div className="px-4">
+    <div className="w-full max-w-3xl mx-auto divide-y px-2 sm:px-4">
+      <div className="mb-4">
         <CreatePostCard />
       </div>
 

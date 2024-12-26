@@ -1,0 +1,15 @@
+[
+  {
+    "AllowedHeaders": [
+      "Authorization",
+      "Content-Type",
+      "x-amz-date",
+      "x-amz-content-sha256",
+      "x-amz-user-agent"
+    ],
+    "AllowedMethods": ["GET", "PUT"],
+    "AllowedOrigins": ["http://localhost:3000", "https://srmap.vercel.app", "https://srmap.live"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+] 

@@ -19,6 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 interface Post {
   id: string;
@@ -31,6 +33,7 @@ interface Post {
   comments: number;
   likedBy?: string[];
   hashtags: string[];
+  imageUrl?: string;
 }
 
 interface Comment {
@@ -130,15 +133,35 @@ export function PostCard({ post }: { post: Post }) {
             <div className="mt-2 text-[15px] leading-normal">
               <RenderContent content={post.content} />
             </div>
+
+            {post.imageUrl && (
+              <div className="mt-3 rounded-lg overflow-hidden">
+                <div className="aspect-video relative">
+                  <Image
+                    src={post.imageUrl}
+                    alt="Post image"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-6 mt-3">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`text-muted-foreground hover:text-primary hover:bg-primary/10 -ml-3 ${hasLiked ? 'text-primary' : ''}`}
+                className={cn(
+                  "text-muted-foreground hover:text-primary hover:bg-primary/10 -ml-3",
+                  hasLiked && "text-primary"
+                )}
                 onClick={toggleLike}
                 disabled={liking}
               >
-                <Heart className={`w-4 h-4 mr-2 ${hasLiked ? 'fill-current' : ''}`} />
+                <Heart className={cn(
+                  "w-4 h-4 mr-2",
+                  hasLiked && "fill-current"
+                )} />
                 {post.likes > 0 && post.likes}
               </Button>
               <Button 
