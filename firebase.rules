@@ -3,7 +3,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Helper function to check if user is admin
     function isAdmin() {
-      return request.auth.token.email in ['admin@srmap.edu.in'];
+      return request.auth.token.email in ['admin@srmap.edu.in'] || 
+        request.auth.token.email.matches('.*@srmap.edu.in$');
     }
 
     // Helper function to check if user is a participant
@@ -26,6 +27,12 @@ service cloud.firestore {
     match /buildings/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Question Papers - new collection
+    match /questionPapers/{paperId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
     }
 
     // User profiles - users can read all profiles but only edit their own

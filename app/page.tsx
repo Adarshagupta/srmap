@@ -3,7 +3,7 @@ import UpcomingEvents from '@/components/upcoming-events';
 import FeaturedUsers from '@/components/featured-users';
 import { CurrentMeal } from '@/components/current-meal';
 import { AskSrmAi } from '@/components/ask-srm-ai';
-import { BookOpen, Calendar, MapPin, Utensils, Users, Settings, User, Bell, Trophy, Newspaper } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, Utensils, Users, Settings, User, Bell, Trophy, Newspaper, FileText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -25,6 +25,12 @@ const QuickLinks = [
     title: 'Navigation',
     href: '/navigation',
     color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+  },
+  {
+    icon: FileText,
+    title: 'Question Papers',
+    href: '/question-papers',
+    color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
   },
   {
     icon: Users,

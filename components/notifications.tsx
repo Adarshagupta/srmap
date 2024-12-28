@@ -24,10 +24,13 @@ interface Notification {
   fromUserId: string;
   fromUserName: string;
   read: boolean;
-  createdAt: any;
+  createdAt: Date | null;
   connectionId?: string;
   status?: 'pending' | 'accepted' | 'declined';
 }
+
+const notificationSound = new Audio('/notification.mp3');
+let hasUserInteracted = false;
 
 export default function Notifications() {
   const { user } = useAuth();
@@ -35,27 +38,11 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const { acceptConnectionRequest, cancelConnectionRequest } = useConnections(user?.uid || '');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousNotificationsRef = useRef<string[]>([]);
   const [fcmToken, setFcmToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // Create audio element
-    audioRef.current = new Audio('/notification.mp3');
-    return () => {
-      if (audioRef.current) {
-        audioRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      console.log('No user found in notifications component');
-      return;
-    }
-
-    console.log('Setting up notifications listener for user:', user.uid);
+    if (!user) return;
 
     // Subscribe to notifications
     const q = query(
@@ -63,101 +50,96 @@ export default function Notifications() {
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
-    console.log('Created notifications query:', q);
 
-    try {
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        console.log('Received notifications snapshot. Metadata:', {
-          fromCache: snapshot.metadata.fromCache,
-          hasPendingWrites: snapshot.metadata.hasPendingWrites,
-          size: snapshot.size
-        });
-        
-        const notifs = snapshot.docs.map(doc => {
-          const data = doc.data();
-          console.log('Processing notification:', { id: doc.id, ...data });
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate(),
-          };
-        }) as Notification[];
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newNotifications = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() // Convert Firestore Timestamp to Date
+        };
+      }) as Notification[];
 
-        // Check for new notifications and play sound
-        const currentNotificationIds = notifs.map(n => n.id);
-        const previousNotificationIds = previousNotificationsRef.current;
-        const hasNewNotifications = currentNotificationIds.some(id => !previousNotificationIds.includes(id));
-        
-        if (hasNewNotifications && audioRef.current) {
-          audioRef.current.play().catch(error => {
+      setNotifications(newNotifications);
+      setUnreadCount(newNotifications.filter(n => !n.read).length);
+
+      // Check for new notifications and play sound
+      if (hasUserInteracted && newNotifications.length > 0) {
+        const currentNotificationIds = newNotifications.map(n => n.id);
+        const hasNewNotification = currentNotificationIds.some(
+          id => !previousNotificationsRef.current.includes(id)
+        );
+
+        if (hasNewNotification) {
+          notificationSound.play().catch((error: Error) => {
             console.error('Error playing notification sound:', error);
           });
         }
 
         previousNotificationsRef.current = currentNotificationIds;
-        console.log('Processed notifications:', notifs.length);
-        setNotifications(notifs);
-        setUnreadCount(notifs.filter(n => !n.read).length);
-      }, (error) => {
-        console.error('Error in notifications snapshot:', error);
-      });
+      }
+    });
 
-      return () => {
-        console.log('Cleaning up notifications listener');
-        unsubscribe();
-      };
-    } catch (error) {
-      console.error('Error setting up notifications listener:', error);
-    }
-  }, [user]);
-
-  // Initialize push notifications
-  useEffect(() => {
-    if (!user) return;
-
-    const initializePushNotifications = async () => {
+    // Initialize Firebase messaging
+    const initMessaging = async () => {
       try {
         const messaging = getMessaging();
+        const token = await getToken(messaging, {
+          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+        });
         
-        // Request permission
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          // Get FCM token
-          const token = await getToken(messaging, {
-            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-          });
-          
+        if (token) {
           setFcmToken(token);
-
-          // Save token to user document
+          // Update user's FCM token in Firestore
           const userRef = doc(db, 'users', user.uid);
           await updateDoc(userRef, {
-            fcmToken: token,
-          });
-
-          // Handle foreground messages
-          onMessage(messaging, (payload) => {
-            // Play notification sound
-            if (audioRef.current) {
-              audioRef.current.play().catch(error => {
-                console.error('Error playing notification sound:', error);
-              });
-            }
-
-            // Show toast notification
-            toast({
-              title: payload.notification?.title || 'New Notification',
-              description: payload.notification?.body,
-            });
+            fcmToken: token
           });
         }
+
+        // Handle foreground messages
+        onMessage(messaging, (payload) => {
+          if (hasUserInteracted) {
+            notificationSound.play().catch((error: Error) => {
+              console.error('Error playing notification sound:', error);
+            });
+          }
+          
+          // Show toast notification
+          toast({
+            title: payload.notification?.title || 'New Notification',
+            description: payload.notification?.body,
+          });
+        });
       } catch (error) {
-        console.error('Error initializing push notifications:', error);
+        console.error('Error initializing messaging:', error);
       }
     };
 
-    initializePushNotifications();
+    initMessaging();
+    return () => unsubscribe();
   }, [user]);
+
+  // Initialize notification sound on first user interaction
+  useEffect(() => {
+    const initSound = () => {
+      if (!hasUserInteracted) {
+        hasUserInteracted = true;
+        notificationSound.load();
+      }
+    };
+
+    window.addEventListener('click', initSound);
+    window.addEventListener('keydown', initSound);
+    window.addEventListener('touchstart', initSound);
+
+    return () => {
+      window.removeEventListener('click', initSound);
+      window.removeEventListener('keydown', initSound);
+      window.removeEventListener('touchstart', initSound);
+    };
+  }, []);
 
   const updateNotificationStatus = async (notificationId: string, status: 'accepted' | 'declined') => {
     if (!user) return;

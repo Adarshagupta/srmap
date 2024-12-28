@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest"
+    "test": "vitest",
+    "postinstall": "node scripts/download-pdf-deps.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.717.0",
@@ -63,6 +64,7 @@
     "react-day-picker": "^8.10.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.51.0",
+    "react-pdf": "^9.2.1",
     "react-resizable-panels": "^2.0.12",
     "react-wrap-balancer": "^1.1.0",
     "recharts": "^2.12.2",

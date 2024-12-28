@@ -49,6 +49,11 @@ if (!BUCKET_NAME || !BUCKET_REGION) {
   throw new Error('Missing required S3 configuration. Please check your environment variables.');
 }
 
+const ALLOWED_FILE_TYPES = {
+  images: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  documents: ['application/pdf']
+};
+
 export async function validateS3Configuration(): Promise<boolean> {
   try {
     console.log('Validating S3 configuration...');
@@ -90,26 +95,34 @@ export async function validateS3Configuration(): Promise<boolean> {
   }
 }
 
-export function generateS3Key(userId: string, type: 'profile' | 'post'): string {
+export function generateS3Key(userId: string, type: 'profile' | 'post' | 'question-paper'): string {
   const uuid = uuidv4();
   const timestamp = Date.now();
   return `${type}/${userId}/${timestamp}-${uuid}`;
 }
 
-export async function uploadToS3(file: File, key: string): Promise<string> {
+export async function uploadToS3(file: File, folder: string = '') {
   console.log('Starting S3 upload:', {
     fileName: file.name,
     fileType: file.type,
     fileSize: file.size,
-    key,
-    bucket: BUCKET_NAME,
-    region: BUCKET_REGION
+    key: folder,
+    bucket: process.env.NEXT_PUBLIC_AWS_BUCKET_NAME
   });
 
   try {
-    // Validate file
-    if (!file.type.startsWith('image/')) {
-      throw new Error('Invalid file type. Only images are allowed.');
+    // Validate file type based on folder
+    const isQuestionPaper = folder.startsWith('question-paper');
+    const allowedTypes = isQuestionPaper ? 
+      [...ALLOWED_FILE_TYPES.documents] : 
+      [...ALLOWED_FILE_TYPES.images];
+
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error(
+        isQuestionPaper ? 
+        'Invalid file type. Only PDF files are allowed.' : 
+        'Invalid file type. Only images are allowed.'
+      );
     }
 
     // Convert file to buffer
@@ -120,7 +133,7 @@ export async function uploadToS3(file: File, key: string): Promise<string> {
     // Prepare upload command
     const command = new PutObjectCommand({
       Bucket: BUCKET_NAME,
-      Key: key,
+      Key: folder,
       Body: buffer,
       ContentType: file.type,
       Metadata: {
@@ -136,31 +149,17 @@ export async function uploadToS3(file: File, key: string): Promise<string> {
     console.log('Upload successful:', response);
 
     // Generate and return public URL
-    const publicUrl = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${key}`;
+    const publicUrl = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${folder}`;
     console.log('Generated public URL:', publicUrl);
     
     return publicUrl;
   } catch (error) {
-    console.error('Error uploading to S3:', {
+    console.log('Error uploading to S3:', {
       error,
       fileName: file.name,
-      bucket: BUCKET_NAME,
-      key,
+      bucket: process.env.NEXT_PUBLIC_AWS_BUCKET_NAME,
+      key: folder
     });
-
-    // Provide more specific error messages
-    if (error instanceof Error) {
-      if (error.message.includes('NetworkingError')) {
-        throw new Error('Network error while uploading. Please check your connection and try again.');
-      } else if (error.message.includes('AccessDenied')) {
-        throw new Error('Access denied. Please check your S3 permissions.');
-      } else if (error.message.includes('NoSuchBucket')) {
-        throw new Error('S3 bucket not found. Please check your configuration.');
-      } else if (error.message.includes('AccessControlListNotSupported')) {
-        throw new Error('Bucket configuration error. Please contact support.');
-      }
-    }
-    
     throw new Error('Failed to upload image. Please try again.');
   }
 }

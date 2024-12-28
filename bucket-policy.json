@@ -24,6 +24,19 @@
       "Principal": "*",
       "Action": "s3:GetObject",
       "Resource": "arn:aws:s3:::srmap/*"
+    },
+    {
+      "Sid": "AllowQuestionPapers",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::324037297116:user/srmap-app-user"
+      },
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::srmap/question-papers/*"
     }
   ]
 } 

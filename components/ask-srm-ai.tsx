@@ -9,6 +9,7 @@ import { useToast } from './ui/use-toast';
 
 export function AskSrmAi() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
@@ -23,6 +24,14 @@ export function AskSrmAi() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsClosing(false);
+    }, 300);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +70,7 @@ export function AskSrmAi() {
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-24 right-4 md:bottom-4 z-50 rounded-full h-12 w-12 p-0"
+        className="fixed bottom-24 right-4 md:bottom-4 z-50 rounded-full h-12 w-12 p-0 hover:scale-110 transition-transform duration-300"
       >
         <Bot className="h-6 w-6" />
       </Button>
@@ -70,14 +79,18 @@ export function AskSrmAi() {
 
   if (isMobile) {
     return (
-      <div className="fixed inset-0 bottom-16 bg-background z-50 flex flex-col">
+      <div 
+        className={`fixed inset-0 bottom-16 bg-background z-50 flex flex-col
+          transition-transform duration-300 ease-in-out
+          ${isClosing ? 'translate-y-full' : 'translate-y-0'}`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
             <h3 className="font-semibold">Ask SRM AI</h3>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+          <Button variant="ghost" size="icon" onClick={handleClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -134,13 +147,17 @@ export function AskSrmAi() {
   }
 
   return (
-    <Card className="fixed bottom-24 right-4 md:bottom-4 z-50 w-[90vw] max-w-[400px] p-4">
+    <Card 
+      className={`fixed bottom-24 right-4 md:bottom-4 z-50 w-[90vw] max-w-[400px] p-4
+        transition-all duration-300 ease-in-out
+        ${isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+    >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5" />
           <h3 className="font-semibold">Ask SRM AI</h3>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+        <Button variant="ghost" size="icon" onClick={handleClose}>
           <X className="h-4 w-4" />
         </Button>
       </div>
