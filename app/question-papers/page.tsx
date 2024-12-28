@@ -15,16 +15,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { BRANCHES, SEMESTERS, type QuestionPaper } from '@/types';
+import { BRANCHES, SEMESTERS } from '@/types';
 import { PDFViewer } from '@/components/pdf-viewer';
+
+interface QuestionPaper {
+  id: string;
+  title: string;
+  branch: string;
+  semester: number;
+  subject: string;
+  year: number;
+  fileUrl: string;
+  uploadedBy: string;
+  uploadedAt: any;
+}
 
 export default function QuestionPapersPage() {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [papers, setPapers] = useState<QuestionPaper[]>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string>('all');
-  const [selectedSemester, setSelectedSemester] = useState<string>('all');
+  const [selectedBranch, setSelectedBranch] = useState('all');
+  const [selectedSemester, setSelectedSemester] = useState('all');
   const [selectedPaper, setSelectedPaper] = useState<QuestionPaper | null>(null);
 
   useEffect(() => {
@@ -50,9 +62,9 @@ export default function QuestionPapersPage() {
         })) as QuestionPaper[];
 
         setPapers(papersData);
-      } catch (error) {
-        console.error('Error fetching papers:', error);
-        setError(error as Error);
+      } catch (err) {
+        console.error('Error fetching papers:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load question papers');
       } finally {
         setLoading(false);
       }
@@ -61,7 +73,6 @@ export default function QuestionPapersPage() {
     fetchPapers();
   }, [user, selectedBranch, selectedSemester]);
 
-  // Show loading state while checking authentication
   if (authLoading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
@@ -70,7 +81,6 @@ export default function QuestionPapersPage() {
     );
   }
 
-  // Show sign in prompt if not authenticated
   if (!user) {
     return (
       <div className="max-w-lg mx-auto py-4 px-2">
@@ -89,16 +99,13 @@ export default function QuestionPapersPage() {
     );
   }
 
-  // Show error state if there's an error fetching papers
   if (error) {
     return (
       <div className="max-w-lg mx-auto py-4 px-2">
         <Card className="p-6">
           <div className="text-center space-y-4">
             <h2 className="text-xl font-semibold text-destructive">Error Loading Papers</h2>
-            <p className="text-muted-foreground">
-              {error.message || 'Failed to load question papers. Please try again.'}
-            </p>
+            <p className="text-muted-foreground">{error}</p>
             <Button 
               onClick={() => window.location.reload()}
               variant="outline"
