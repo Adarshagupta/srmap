@@ -1,5 +1,6 @@
 "use client";
 
+import type { NextPage } from 'next';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
@@ -27,10 +28,12 @@ interface QuestionPaper {
   year: number;
   fileUrl: string;
   uploadedBy: string;
-  uploadedAt: any;
+  uploadedAt: {
+    toDate: () => Date;
+  };
 }
 
-export default function QuestionPapersPage() {
+const QuestionPapersPage: NextPage = () => {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -232,4 +235,6 @@ export default function QuestionPapersPage() {
       )}
     </div>
   );
-} 
+}
+
+export default QuestionPapersPage; 
