@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useMemo } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
+import { useState, useEffect } from 'react';
+import { Document, Page } from 'react-pdf';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Download, Loader2, X, AlertTriangle } from 'lucide-react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 interface PDFViewerProps {
   fileUrl: string;
@@ -18,18 +19,20 @@ interface PDFViewerProps {
 }
 
 export function PDFViewer({ fileUrl, title, open, onOpenChange }: PDFViewerProps) {
-  const [numPages, setNumPages] = useState<number>(0);
+  const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Create proxy URL for the PDF
-  const proxyUrl = useMemo(() => {
-    if (!fileUrl) return '';
-    const url = new URL('/api/pdf', window.location.origin);
-    url.searchParams.set('url', fileUrl);
-    return url.toString();
-  }, [fileUrl]);
+  // Initialize worker in component
+  useEffect(() => {
+    async function initPdfWorker() {
+      const pdfjs = await import('pdfjs-dist/build/pdf');
+      const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.entry');
+      pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+    }
+    initPdfWorker().catch(console.error);
+  }, []);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -37,142 +40,76 @@ export function PDFViewer({ fileUrl, title, open, onOpenChange }: PDFViewerProps
     setError(null);
   }
 
-  function onDocumentLoadError(err: Error) {
-    console.error('Error loading PDF:', err);
+  function onDocumentLoadError(error: Error) {
+    console.error('Error loading PDF:', error);
     setLoading(false);
-    setError(err);
-  }
-
-  function changePage(offset: number) {
-    setPageNumber(prevPageNumber => prevPageNumber + offset);
-  }
-
-  // Reset state when modal is opened
-  function handleOpenChange(open: boolean) {
-    if (!open) {
-      setPageNumber(1);
-      setError(null);
-      setLoading(true);
-    }
-    onOpenChange(open);
+    setError(error);
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent 
-        className="max-w-4xl w-[95vw] h-[90vh] p-6"
-        aria-describedby="pdf-viewer-description"
-      >
-        <DialogTitle className="sr-only">{title}</DialogTitle>
-        <p id="pdf-viewer-description" className="sr-only">
-          PDF viewer with page navigation controls. Use left and right arrow buttons to navigate between pages.
-        </p>
-
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-4">
-            {!error && numPages > 0 && (
-              <>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => changePage(-1)}
-                  disabled={pageNumber <= 1}
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm">
-                  Page {pageNumber} of {numPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => changePage(1)}
-                  disabled={pageNumber >= numPages}
-                  aria-label="Next page"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              download
-              aria-label="Download PDF"
-            >
-              <Button variant="outline" size="icon">
-                <Download className="h-4 w-4" />
-              </Button>
-            </a>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleOpenChange(false)}
-              aria-label="Close PDF viewer"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl w-[90vw]" aria-describedby="pdf-viewer-description">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div id="pdf-viewer-description" className="sr-only">
+          PDF viewer for {title}. Use left and right arrows to navigate between pages.
         </div>
-
-        <div className="flex-1 overflow-auto flex justify-center bg-muted rounded-lg">
-          {loading && (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          )}
+        <div className="flex flex-col items-center gap-4">
           {error ? (
-            <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
-              <Alert variant="destructive" className="mb-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  Failed to load the PDF viewer. Please try downloading the file instead.
-                </AlertDescription>
-              </Alert>
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                className="mt-4"
-              >
-                <Button>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-              </a>
+            <div className="text-center text-destructive">
+              <p>Failed to load PDF. Please try again later.</p>
+              <p className="text-sm text-muted-foreground">{error.message}</p>
             </div>
           ) : (
             <Document
-              file={proxyUrl}
+              file={fileUrl}
               onLoadSuccess={onDocumentLoadSuccess}
               onLoadError={onDocumentLoadError}
               loading={
-                <div className="flex items-center justify-center min-h-[400px]">
-                  <Loader2 className="h-8 w-8 animate-spin" />
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading PDF...
                 </div>
               }
-              options={{
-                cMapUrl: '/cmaps/',
-                cMapPacked: true,
-              }}
             >
               <Page
                 pageNumber={pageNumber}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
-                className="max-w-full"
+                width={Math.min(window.innerWidth * 0.8, 800)}
                 loading={
-                  <div className="flex items-center justify-center min-h-[400px]">
-                    <Loader2 className="h-8 w-8 animate-spin" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading page...
                   </div>
                 }
               />
             </Document>
+          )}
+
+          {numPages && !error && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setPageNumber((prev) => Math.max(prev - 1, 1))}
+                disabled={pageNumber <= 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm">
+                Page {pageNumber} of {numPages}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setPageNumber((prev) => Math.min(prev + 1, numPages))}
+                disabled={pageNumber >= numPages}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           )}
         </div>
       </DialogContent>

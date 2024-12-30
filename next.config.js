@@ -10,16 +10,30 @@ const nextConfig = {
     removeConsole: false,
   },
   webpack: (config) => {
+    config.resolve.alias.canvas = false;
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      buffer: false,
+    };
+
+    // Add transpilation rule for undici
     config.module.rules.push({
-      test: /\.js$/,
+      test: /node_modules\/undici\/.*\.js$/,
       use: {
         loader: 'babel-loader',
         options: {
           presets: ['@babel/preset-env'],
-          plugins: ['@babel/plugin-proposal-private-methods']
+          plugins: [
+            '@babel/plugin-transform-private-methods',
+            '@babel/plugin-transform-class-properties',
+            '@babel/plugin-transform-private-property-in-object'
+          ]
         }
       }
     });
+
     return config;
   }
 };

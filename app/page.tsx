@@ -118,10 +118,11 @@ export default function Home() {
               <div className="p-2 bg-white/10 backdrop-blur-md rounded-2xl">
                 <Image
                   src="https://srmap.edu.in/wp-content/uploads/2019/11/SRMAP-Logo-2.png"
-                  alt="SRM AP Logo"
-                  width={50}
-                  height={50}
-                  className="rounded-xl"
+                  alt="SRM University AP Logo"
+                  width={200}
+                  height={80}
+                  style={{ width: 'auto', height: 'auto' }}
+                  priority
                 />
               </div>
               <div>

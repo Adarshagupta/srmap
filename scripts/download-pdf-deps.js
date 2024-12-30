@@ -1,46 +1,49 @@
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
-const { execSync } = require('child_process');
 
-const PUBLIC_DIR = path.join(process.cwd(), 'public');
-const PDFJS_VERSION = '4.8.69';
+const PDF_VERSION = '3.11.174';  // Match the version from pdfjs-dist
+const files = [
+  {
+    url: `https://unpkg.com/pdfjs-dist@${PDF_VERSION}/build/pdf.worker.min.js`,
+    dest: '../public/pdf.worker.min.js'
+  }
+];
 
-// Create public directory if it doesn't exist
-if (!fs.existsSync(PUBLIC_DIR)) {
-  fs.mkdirSync(PUBLIC_DIR);
-}
-
-// Download PDF.js worker
-const workerUrl = `https://unpkg.com/pdfjs-dist@${PDFJS_VERSION}/build/pdf.worker.min.js`;
-const workerPath = path.join(PUBLIC_DIR, 'pdf.worker.min.js');
-
-console.log('Downloading PDF.js worker...');
-https.get(workerUrl, (response) => {
-  const file = fs.createWriteStream(workerPath);
-  response.pipe(file);
-  file.on('finish', () => {
-    file.close();
-    console.log('PDF.js worker downloaded successfully');
+function downloadFile(url, dest) {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    https.get(url, response => {
+      response.pipe(file);
+      file.on('finish', () => {
+        file.close();
+        console.log(`Downloaded ${dest}`);
+        resolve();
+      });
+    }).on('error', err => {
+      fs.unlink(dest, () => {});
+      reject(err);
+    });
   });
-}).on('error', (err) => {
-  console.error('Error downloading PDF.js worker:', err);
-  process.exit(1);
-});
-
-// Download and extract cmaps
-const cmapsDir = path.join(PUBLIC_DIR, 'cmaps');
-if (!fs.existsSync(cmapsDir)) {
-  fs.mkdirSync(cmapsDir);
 }
 
-console.log('Downloading and extracting cmaps...');
-try {
-  execSync(`npm install --no-save pdfjs-dist@${PDFJS_VERSION}`);
-  const cmapsPath = path.join(process.cwd(), 'node_modules/pdfjs-dist/cmaps');
-  fs.cpSync(cmapsPath, cmapsDir, { recursive: true });
-  console.log('Cmaps downloaded and extracted successfully');
-} catch (err) {
-  console.error('Error downloading cmaps:', err);
-  process.exit(1);
-} 
+async function downloadDeps() {
+  try {
+    for (const file of files) {
+      const destPath = path.join(__dirname, file.dest);
+      const dir = path.dirname(destPath);
+      
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      await downloadFile(file.url, destPath);
+    }
+    console.log('All PDF.js dependencies downloaded successfully!');
+  } catch (error) {
+    console.error('Error downloading dependencies:', error);
+    process.exit(1);
+  }
+}
+
+downloadDeps(); 
