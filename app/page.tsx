@@ -3,7 +3,8 @@ import UpcomingEvents from '@/components/upcoming-events';
 import FeaturedUsers from '@/components/featured-users';
 import { CurrentMeal } from '@/components/current-meal';
 import { AskSrmAi } from '@/components/ask-srm-ai';
-import { BookOpen, Calendar, MapPin, Utensils, Users, Settings, User, Bell, Trophy, Newspaper, FileText } from 'lucide-react';
+import { RecentPapers } from '@/components/recent-papers';
+import { BookOpen, Calendar, MapPin, Utensils, Users, User, Bell, Trophy, Newspaper, FileText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -44,12 +45,7 @@ const QuickLinks = [
     href: '/profile',
     color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
   },
-  {
-    icon: Settings,
-    title: 'Settings',
-    href: '/settings',
-    color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
-  },
+
 ];
 
 const Highlights = [
@@ -171,7 +167,7 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Current Meal and Events Section */}
+      {/* Current Meal, Events, and Papers Section */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {/* Menu Section - Takes up 2 columns */}
         <div className="lg:col-span-2 space-y-4">
@@ -194,23 +190,51 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Events Section - Takes up 3 columns */}
+        {/* Events and Papers Section - Takes up 3 columns */}
         <div className="lg:col-span-3 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-                Upcoming Events
-              </h2>
-              <p className="text-muted-foreground">Stay updated with campus activities</p>
+          {/* Events Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                  Upcoming Events
+                </h2>
+                <p className="text-muted-foreground">Stay updated with campus activities</p>
+              </div>
+              <Link 
+                href="/events" 
+                className="text-sm text-primary hover:text-blue-600 transition-colors hover:underline"
+              >
+                View all
+              </Link>
             </div>
-            <Link 
-              href="/events" 
-              className="text-sm text-primary hover:text-blue-600 transition-colors hover:underline"
-            >
-              View all
-            </Link>
+            <UpcomingEvents />
           </div>
-          <UpcomingEvents />
+
+          {/* Question Papers Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+                  Recent Question Papers
+                </h2>
+                <p className="text-muted-foreground">Latest additions to our question bank</p>
+              </div>
+              <Link 
+                href="/question-papers" 
+                className="text-sm text-pink-600 hover:text-rose-600 transition-colors hover:underline"
+              >
+                View all
+              </Link>
+            </div>
+            <div className="bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-500/5 dark:to-rose-500/5 rounded-2xl p-0.5">
+              <div className="bg-background rounded-2xl">
+                <div className="p-4">
+                  <RecentPapers />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
