@@ -6,8 +6,13 @@ import ClientLayout from './client-layout';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'SRM University AP',
-  description: 'SRM University AP Student Portal',
+  title: {
+    template: '%s | SRM University AP',
+    default: 'SRM University AP',
+  },
+  description: 'Experience excellence in education at our state-of-the-art campus. Your journey to success begins here.',
+  keywords: ['SRM AP', 'university', 'education', 'engineering', 'campus', 'college'],
+  authors: [{ name: 'SRM University AP' }],
   manifest: '/manifest.json',
 };
 
