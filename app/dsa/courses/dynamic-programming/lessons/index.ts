@@ -83,6 +83,7 @@ def fibonacci(n):
     },
     1: { // Fibonacci Numbers
       type: 'practice',
+      id: 'fibonacci-numbers',
       title: 'Fibonacci Numbers',
       difficulty: 'Easy',
       description: 'Write a function to calculate the nth Fibonacci number using dynamic programming.',
@@ -118,11 +119,11 @@ def fibonacci(n):
       testCases: [
         {
           input: ['5'],
-          output: [5]
+          output: ['5']
         },
         {
           input: ['10'],
-          output: [55]
+          output: ['55']
         }
       ],
       hints: [
@@ -148,6 +149,7 @@ def fibonacci(n):
   1: { // Advanced DP Problems
     0: { // Longest Common Subsequence
       type: 'practice',
+      id: 'longest-common-subsequence',
       title: 'Longest Common Subsequence',
       difficulty: 'Medium',
       description: 'Given two strings text1 and text2, return the length of their longest common subsequence.',
@@ -184,15 +186,15 @@ def fibonacci(n):
       testCases: [
         {
           input: ['"abcde"', '"ace"'],
-          output: [3]
+          output: ['3']
         },
         {
           input: ['"abc"', '"abc"'],
-          output: [3]
+          output: ['3']
         },
         {
           input: ['"abc"', '"def"'],
-          output: [0]
+          output: ['0']
         }
       ],
       hints: [

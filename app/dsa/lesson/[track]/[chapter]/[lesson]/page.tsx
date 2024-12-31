@@ -16,7 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
-import { TRACK_CONTENT } from '@/app/dsa/track/[slug]/page';
+import { LESSON_CONTENT as GLOBAL_LESSON_CONTENT, PracticeLesson } from '@/app/dsa/content';
 
 interface Example {
   input: string;
@@ -577,40 +577,55 @@ export default function LessonPage({ params }: { params: { track: string; chapte
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
 
-  const lesson = LESSON_CONTENT[params.track]?.[parseInt(params.chapter)]?.[parseInt(params.lesson)];
-  const track = TRACK_CONTENT[params.track] as Track | undefined;
+  const lesson = GLOBAL_LESSON_CONTENT[params.track]?.[parseInt(params.chapter)]?.[parseInt(params.lesson)];
+  const trackContent = GLOBAL_LESSON_CONTENT[params.track];
+  const currentChapterContent = trackContent?.[parseInt(params.chapter)];
+  const nextChapterContent = trackContent?.[parseInt(params.chapter) + 1];
 
-  if (!track || !lesson) {
+  if (!trackContent || !lesson || !currentChapterContent) {
     return (
-      <div className="max-w-[100rem] mx-auto py-12 px-2 text-center">
-        <h1 className="text-2xl font-bold">Lesson not found</h1>
-        <p className="text-muted-foreground mt-2">The requested lesson does not exist.</p>
-        <Button asChild className="mt-4">
-          <Link href="/dsa">Back to Courses</Link>
-        </Button>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Lesson Not Found</h1>
+          <Button asChild>
+            <Link href="/dsa">Back to Courses</Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
-  const currentChapter = track.chapters[parseInt(params.chapter)];
-  const currentLessonIndex = currentChapter.lessons.findIndex((l: TrackLesson) => l.id === parseInt(params.lesson));
-  
+  const isPracticeLesson = lesson.type === 'practice';
+  const practiceLesson = isPracticeLesson ? lesson as PracticeLesson : null;
+
   // Get next lesson
-  let nextLesson = null;
-  if (currentLessonIndex < currentChapter.lessons.length - 1) {
-    // Next lesson in same chapter
+  let nextLesson: { track: string; chapter: string; lesson: string } | null = null;
+  const currentLessonNumber = parseInt(params.lesson);
+  const nextLessonInChapter = currentChapterContent[currentLessonNumber + 1];
+
+  if (nextLessonInChapter) {
     nextLesson = {
       track: params.track,
       chapter: params.chapter,
-      lesson: (parseInt(params.lesson) + 1).toString()
+      lesson: (currentLessonNumber + 1).toString()
     };
-  } else if (parseInt(params.chapter) < track.chapters.length - 1) {
-    // First lesson of next chapter
-    nextLesson = {
-      track: params.track,
-      chapter: (parseInt(params.chapter) + 1).toString(),
-      lesson: "0"
-    };
+  } else {
+    // Look for the first lesson in subsequent chapters
+    let nextChapterIndex = parseInt(params.chapter) + 1;
+    while (trackContent[nextChapterIndex]) {
+      const nextChapterContent = trackContent[nextChapterIndex];
+      // Find the first lesson in this chapter
+      const firstLessonEntry = Object.entries(nextChapterContent)[0];
+      if (firstLessonEntry) {
+        nextLesson = {
+          track: params.track,
+          chapter: nextChapterIndex.toString(),
+          lesson: firstLessonEntry[0]
+        };
+        break;
+      }
+      nextChapterIndex++;
+    }
   }
 
   const handleRunCode = (code: string) => {
@@ -622,7 +637,7 @@ export default function LessonPage({ params }: { params: { track: string; chapte
     try {
       // Here we'll integrate with a code execution service
       // For now, just simulate running tests
-      const testResults = lesson.testCases?.map(test => {
+      const testResults = practiceLesson?.testCases?.map((test: TestCase) => {
         try {
           // In reality, we'd send the code to a backend service
           // that would safely execute it with the test inputs
@@ -723,7 +738,7 @@ export default function LessonPage({ params }: { params: { track: string; chapte
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Hints</h2>
                 <div className="space-y-4">
-                  {lesson.hints?.map((hint, index) => (
+                  {isPracticeLesson && lesson.hints?.map((hint: string, index: number) => (
                     <div key={index} className="flex items-start gap-2">
                       <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
                         {index + 1}
@@ -740,12 +755,12 @@ export default function LessonPage({ params }: { params: { track: string; chapte
                 <div className="space-y-4">
                   <div className="prose dark:prose-invert max-w-none">
                     <h2>Solution</h2>
-                    <pre><code>{lesson.solution}</code></pre>
+                    <pre><code>{isPracticeLesson && lesson.solution}</code></pre>
 
                     <h3>Complexity Analysis</h3>
                     <ul>
-                      <li><strong>Time Complexity:</strong> {lesson.timeComplexity}</li>
-                      <li><strong>Space Complexity:</strong> {lesson.spaceComplexity}</li>
+                      <li><strong>Time Complexity:</strong> {isPracticeLesson && lesson.timeComplexity}</li>
+                      <li><strong>Space Complexity:</strong> {isPracticeLesson && lesson.spaceComplexity}</li>
                     </ul>
                   </div>
                 </div>
@@ -755,7 +770,7 @@ export default function LessonPage({ params }: { params: { track: string; chapte
         </div>
 
         {/* Right Panel - Code Editor */}
-        {lesson.type === 'practice' && (
+        {isPracticeLesson && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

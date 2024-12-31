@@ -90,6 +90,7 @@ def partition(arr, low, high):
       ]
     },
     1: { // Merge Sort Implementation
+      id: 'merge-sort',
       type: 'practice',
       title: 'Implement Merge Sort',
       difficulty: 'Medium',
@@ -150,11 +151,11 @@ public int[] merge(int[] left, int[] right) {
       testCases: [
         {
           input: ['[3, 1, 4, 1, 5]'],
-          output: [[1, 1, 3, 4, 5]]
+          output: ['[1, 1, 3, 4, 5]']
         },
         {
           input: ['[5, 4, 3, 2, 1]'],
-          output: [[1, 2, 3, 4, 5]]
+          output: ['[1, 2, 3, 4, 5]']
         }
       ],
       hints: [

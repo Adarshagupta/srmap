@@ -93,8 +93,12 @@ export default function LessonPage({ params }: LessonPageProps) {
             <div>
               <h2 className="text-2xl font-semibold mb-4">Solution</h2>
               <CodeEditor
-                starterCode={lesson.starterCode}
-                testCases={lesson.testCases}
+                code={lesson.starterCode.python}
+                language="python"
+                onChange={(value: string) => {
+                  // Handle code changes
+                  console.log('Code changed:', value);
+                }}
               />
             </div>
           </div>

@@ -1,6 +1,7 @@
-import { Lesson } from '../../../content';
+import { PracticeLesson } from '../../../content';
 
-export const REVERSE_WORDS: Lesson = {
+export const REVERSE_WORDS: PracticeLesson = {
+  id: 'reverse-words',
   type: 'practice',
   title: 'Reverse Words in a String',
   difficulty: 'Easy',

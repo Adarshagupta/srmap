@@ -102,6 +102,7 @@ def postorder(root):
     },
     1: { // Binary Search Tree
       type: 'practice',
+      id: 'implement-binary-search-tree',
       title: 'Implement Binary Search Tree',
       difficulty: 'Medium',
       description: 'Implement a Binary Search Tree with insert, search, and delete operations.',
@@ -195,11 +196,11 @@ class BST {
       testCases: [
         {
           input: ['insert(5)', 'insert(3)', 'search(3)'],
-          output: [0, 0, true]
+          output: ['0', '0', 'true']
         },
         {
           input: ['insert(5)', 'delete(5)', 'search(5)'],
-          output: [0, 0, false]
+          output: ['0', '0', 'false']
         }
       ],
       hints: [

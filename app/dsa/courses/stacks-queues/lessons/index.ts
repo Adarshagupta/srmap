@@ -57,6 +57,7 @@ class Stack:
     },
     1: { // Stack Implementation
       type: 'practice',
+      id: 'implement-stack',
       title: 'Implement a Stack',
       difficulty: 'Easy',
       description: 'Implement a stack with push, pop, peek, and isEmpty operations.',
@@ -142,11 +143,11 @@ public:
       testCases: [
         {
           input: ['push(1)', 'push(2)', 'pop()'],
-          output: [0, 0, 2]
+          output: ['0', '0', '2']
         },
         {
           input: ['is_empty()', 'push(1)', 'is_empty()'],
-          output: [true, 0, false]
+          output: ['true', '0', 'false']
         }
       ],
       hints: [

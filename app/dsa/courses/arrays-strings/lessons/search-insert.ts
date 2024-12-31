@@ -1,6 +1,7 @@
-import { Lesson } from '../../../content';
+import { PracticeLesson } from '../../../content';
 
-export const SEARCH_INSERT: Lesson = {
+export const SEARCH_INSERT: PracticeLesson = {
+  id: 'search-insert',
   type: 'practice',
   title: 'Search Insert Position',
   difficulty: 'Easy',
@@ -48,19 +49,19 @@ You must write an algorithm with O(log n) runtime complexity.`,
   testCases: [
     {
       input: ['[1, 3, 5, 6]', '5'],
-      output: [2]
+      output: ['2']
     },
     {
       input: ['[1, 3, 5, 6]', '2'],
-      output: [1]
+      output: ['1']
     },
     {
       input: ['[1, 3, 5, 6]', '7'],
-      output: [4]
+      output: ['4']
     },
     {
       input: ['[1, 3, 5, 6]', '0'],
-      output: [0]
+      output: ['0']
     }
   ],
   hints: [

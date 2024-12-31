@@ -58,6 +58,7 @@ class LinkedList:
     },
     1: { // Basic Operations
       type: 'practice',
+      id: 'basic-linked-list-operations',
       title: 'Basic Linked List Operations',
       difficulty: 'Easy',
       description: 'Implement basic operations (insert, delete, search) on a singly linked list.',

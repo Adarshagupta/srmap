@@ -48,12 +48,58 @@ export default function ProblemPage({ params }: ProblemPageProps) {
     setOutput('Running test cases...');
 
     try {
-      // Here you would typically send the code to a backend service
-      // that would run it against the test cases
-      const results = await Promise.resolve('All test cases passed!');
-      setOutput(results);
+      const response = await fetch('/api/code/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          problemId: params.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response format from server');
+      }
+
+      if (data.success) {
+        if (!data.results || !Array.isArray(data.results.testResults)) {
+          throw new Error('Invalid test results format');
+        }
+
+        const { results } = data;
+        let outputText = `${results.message || 'Test Results'}\n\n`;
+        
+        results.testResults.forEach((result: any, index: number) => {
+          if (!result || typeof result !== 'object') {
+            throw new Error(`Invalid test case result format for case ${index + 1}`);
+          }
+
+          outputText += `Test Case ${index + 1}:\n`;
+          outputText += `Input: ${result.input || 'N/A'}\n`;
+          outputText += `Expected Output: ${result.expectedOutput || 'N/A'}\n`;
+          outputText += `Actual Output: ${result.actualOutput || 'N/A'}\n`;
+          outputText += `Status: ${result.passed ? 'Passed ✓' : 'Failed ✗'}\n`;
+          if (result.error) {
+            outputText += `Error: ${result.error}\n`;
+          }
+          outputText += '\n';
+        });
+
+        setOutput(outputText);
+      } else {
+        setOutput(`Error: ${data.error || 'Unknown error occurred'}`);
+      }
     } catch (error) {
-      setOutput('Error running code: ' + (error as Error).message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setOutput(`Error running code: ${errorMessage}\n\nPlease check your code for syntax errors or try again later.`);
     } finally {
       setIsRunning(false);
     }
@@ -64,12 +110,62 @@ export default function ProblemPage({ params }: ProblemPageProps) {
     setOutput('Submitting solution...');
 
     try {
-      // Here you would typically send the code to a backend service
-      // that would validate it against all test cases
-      const results = await Promise.resolve('Solution accepted!');
-      setOutput(results);
+      const response = await fetch('/api/code/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          problemId: params.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response format from server');
+      }
+      
+      if (data.success) {
+        if (!data.results || typeof data.results !== 'object') {
+          throw new Error('Invalid submission results format');
+        }
+
+        const { results } = data;
+        let outputText = 'Solution Submission Results:\n\n';
+        
+        if (results.passed) {
+          outputText += '✅ Solution Accepted!\n\n';
+          outputText += `Runtime: ${results.runtime || 'N/A'}\n`;
+          outputText += `Memory Usage: ${results.memory || 'N/A'}\n`;
+          if (results.feedback) {
+            outputText += `\nFeedback: ${results.feedback}\n`;
+          }
+        } else {
+          outputText += '❌ Solution Rejected\n\n';
+          if (results.failedTestCase) {
+            outputText += 'Failed Test Case:\n';
+            outputText += `Input: ${results.failedTestCase.input || 'N/A'}\n`;
+            outputText += `Expected Output: ${results.failedTestCase.expectedOutput || 'N/A'}\n`;
+            outputText += `Your Output: ${results.failedTestCase.actualOutput || 'N/A'}\n`;
+          }
+          if (results.error) {
+            outputText += `\nError: ${results.error}\n`;
+          }
+        }
+
+        setOutput(outputText);
+      } else {
+        setOutput(`Error: ${data.error || 'Unknown error occurred during submission'}`);
+      }
     } catch (error) {
-      setOutput('Error submitting code: ' + (error as Error).message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setOutput(`Error submitting solution: ${errorMessage}\n\nPlease try again later.`);
     } finally {
       setIsRunning(false);
     }

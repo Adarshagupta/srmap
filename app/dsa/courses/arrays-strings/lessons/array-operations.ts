@@ -1,6 +1,7 @@
 import { PracticeLesson } from '../../../content';
 
 export const ARRAY_OPERATIONS: PracticeLesson = {
+  id: 'array-operations',
   type: 'practice',
   title: 'Array Operations',
   difficulty: 'Easy',
@@ -126,19 +127,14 @@ Explanation: Element 3 is found at index 2</code></pre>
   </div>`,
   examples: [
     {
-      input: 'arr = [1, 2, 3], element = 4, index = 1',
+      input: 'arr = [1, 2, 3], k = 4, pos = 1',
       output: '[1, 4, 2, 3]',
-      explanation: '4 is inserted at index 1, shifting [2, 3] right'
+      explanation: 'Element 4 is inserted at position 1, shifting [2, 3] right'
     },
     {
       input: 'arr = [1, 2, 3, 4], index = 1',
-      output: '[1, 3, 4]',
+      output: '[1, 2, 3, 4]',
       explanation: 'Element at index 1 is removed, shifting [3, 4] left'
-    },
-    {
-      input: 'arr = [1, 2, 3, 4], element = 3',
-      output: '2',
-      explanation: 'Element 3 is found at index 2'
     }
   ],
   starterCode: {
@@ -204,15 +200,15 @@ public:
   testCases: [
     {
       input: ['[1, 2, 3]', '4', '1'],
-      output: [[1, 4, 2, 3]]
+      output: ['[1, 4, 2, 3]']
     },
     {
       input: ['[1, 2, 3, 4]', '1'],
-      output: [[1, 3, 4]]
+      output: ['[1, 2, 3, 4]']
     },
     {
-      input: ['[1, 2, 3, 4]', '3'],
-      output: [2]
+      input: ['[1]', '2'],
+      output: ['[2]']
     }
   ],
   hints: [

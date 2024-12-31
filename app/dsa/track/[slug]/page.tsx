@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,6 @@ import {
   Timer,
   ArrowRight,
 } from 'lucide-react';
-import Link from 'next/link';
 
 interface Chapter {
   id: number;
@@ -39,7 +39,7 @@ interface Track {
   chapters: Chapter[];
 }
 
-export const TRACK_CONTENT: Record<string, Track> = {
+const TRACK_CONTENT: Record<string, Track> = {
   'arrays-strings': {
     title: 'Arrays & Strings',
     description: 'Master array manipulation and string processing techniques',
