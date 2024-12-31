@@ -34,6 +34,9 @@ const nextConfig = {
       }
     });
 
+    // Ignore binary files that cause issues
+    config.module.noParse = [/sshcrypto\.node$/];
+    
     return config;
   }
 };

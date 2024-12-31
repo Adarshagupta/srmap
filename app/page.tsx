@@ -4,7 +4,7 @@ import FeaturedUsers from '@/components/featured-users';
 import { CurrentMeal } from '@/components/current-meal';
 import { AskSrmAi } from '@/components/ask-srm-ai';
 import { RecentPapers } from '@/components/recent-papers';
-import { BookOpen, Calendar, MapPin, Utensils, Users, User, Bell, Trophy, Newspaper, FileText } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, Utensils, Users, User, Bell, Trophy, Newspaper, FileText, Code2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -14,6 +14,12 @@ const QuickLinks = [
     title: 'Events',
     href: '/events',
     color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  },
+  {
+    icon: Code2,
+    title: 'DSA Practice',
+    href: '/dsa',
+    color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
   },
   {
     icon: Utensils,
@@ -45,7 +51,6 @@ const QuickLinks = [
     href: '/profile',
     color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
   },
-
 ];
 
 const Highlights = [
