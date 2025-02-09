@@ -458,7 +458,7 @@ export default function Home() {
       </div>
 
       {/* Full Banner (hidden on small screens) */}
-      <div className="hidden md:block relative h-[300px] sm:h-[350px] md:h-[400px] rounded-3xl overflow-hidden">
+      <div className="hidden md:block relative h-[180px] sm:h-[200px] md:h-[220px] lg:h-[250px] xl:h-[280px] rounded-2xl overflow-hidden">
         {/* Background Image and Overlay */}
         <div className="absolute inset-0">
           <Image
@@ -471,241 +471,43 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/70 to-transparent" />
           
           {/* Decorative Elements */}
-          <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-background/20 to-transparent" />
-          <div className="absolute top-1/2 right-0 w-48 sm:w-72 h-48 sm:h-72 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 right-0 w-32 sm:w-48 h-32 sm:h-48 bg-purple-500/10 rounded-full blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-background/20 to-transparent" />
+          <div className="absolute top-1/2 right-0 w-32 lg:w-48 h-32 lg:h-48 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 right-0 w-24 lg:w-32 h-24 lg:h-32 bg-purple-500/10 rounded-full blur-2xl" />
         </div>
 
         {/* Content */}
-        <div className="relative h-full flex flex-col justify-between p-4 sm:p-6 md:p-10">
-          {/* Top Section */}
-          <div className="flex justify-between items-start">
+        <div className="relative h-full flex items-center p-4 sm:p-6 md:p-8 lg:p-10 max-w-[1600px] mx-auto">
+          <div className="flex justify-between items-center w-full">
             {/* Logo and Title */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-              <div className="p-2 bg-white/10 backdrop-blur-md rounded-2xl">
+            <div className="flex items-center gap-3 lg:gap-4">
+              <div className="p-1.5 bg-white/10 backdrop-blur-md rounded-xl">
                 <Image
                   src="https://srmap.edu.in/wp-content/uploads/2019/11/SRMAP-Logo-2.png"
                   alt="SRM University AP Logo"
-                  width={150}
-                  height={60}
-                  className="w-auto h-auto sm:w-[200px] sm:h-[80px]"
+                  width={120}
+                  height={48}
+                  className="w-auto h-auto sm:w-[120px] sm:h-[48px] lg:w-[150px] lg:h-[60px]"
                   style={{ width: 'auto', height: 'auto' }}
                   priority
                 />
               </div>
-              <div className="text-center sm:text-left">
-                <h1 className="text-xl sm:text-2xl md:text-4xl font-bold tracking-tight text-white">
+              <div>
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-white">
                   Welcome to SRM University AP
                 </h1>
-                <p className="text-sm sm:text-base md:text-lg text-white/90 mt-1 sm:mt-2">
+                <p className="text-xs sm:text-sm md:text-base lg:text-lg text-white/90 mt-0.5 sm:mt-1 lg:mt-2 max-w-2xl">
                   Experience excellence in education at our state-of-the-art campus
                 </p>
               </div>
             </div>
 
-            {/* Weather Widget */}
-            <div className="hidden md:flex items-center gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-3">
-              <div className="flex items-center gap-2">
-                <WeatherIcon className="w-8 h-8 text-white" />
-                <div className="text-white">
-                  <div className="text-2xl font-bold">{weather.temp}°C</div>
-                  <div className="text-xs text-white/70 capitalize">{weather.condition}</div>
-                </div>
-              </div>
-              <div className="h-10 w-px bg-white/20" />
-              <div className="flex gap-4">
-                <div className="text-white">
-                  <div className="flex items-center gap-1">
-                    <ThermometerSun className="w-4 h-4 text-white/70" />
-                    <span className="text-sm">{weather.humidity}%</span>
-                  </div>
-                  <div className="text-xs text-white/70">Humidity</div>
-                </div>
-                <div className="text-white">
-                  <div className="flex items-center gap-1">
-                    <Wind className="w-4 h-4 text-white/70" />
-                    <span className="text-sm">{weather.windSpeed} km/h</span>
-                  </div>
-                  <div className="text-xs text-white/70">Wind</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Current Time and Notifications */}
-            <div className="hidden sm:flex flex-col items-end gap-2">
-              <div className="flex items-center gap-2 text-white/90">
-                <Clock className="w-4 h-4" />
-                <span>{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-              {notifications.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="bg-white/10 text-white hover:bg-white/20"
-                  onClick={() => router.push('/notifications')}
-                >
-                  <Bell className="w-4 h-4 mr-2" />
-                  {notifications.length} New Notifications
-                </Button>
-              )}
+            {/* Current Time */}
+            <div className="hidden sm:flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-md rounded-lg px-3 py-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span className="text-sm">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           </div>
-
-          {/* Campus Status Dashboard */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 mt-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-              <TooltipProvider>
-                {/* WiFi Status */}
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="flex items-center gap-2 text-white">
-                      <Wifi className={`w-5 h-5 ${getStatusColor(campusStatus.wifiStatus)}`} />
-                      <span className="text-sm">Campus WiFi</span>
-                      <Badge variant="secondary" className="ml-auto">
-                        {campusStatus.wifiStatus}
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Current WiFi strength across campus</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Bus Service */}
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="flex items-center gap-2 text-white">
-                      <Bus className={`w-5 h-5 ${getStatusColor(campusStatus.busService)}`} />
-                      <span className="text-sm">Bus Service</span>
-                      <Badge variant="secondary" className="ml-auto">
-                        {campusStatus.busService}
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Campus shuttle service status</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Mess Status */}
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="flex items-center gap-2 text-white">
-                      <Coffee className={`w-5 h-5 ${getStatusColor(campusStatus.messStatus)}`} />
-                      <span className="text-sm">Mess Status</span>
-                      <Badge variant="secondary" className="ml-auto">
-                        {campusStatus.messStatus}
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Current mess occupancy and status</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Library Occupancy */}
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="flex items-center gap-2 text-white">
-                      <BookOpen className="w-5 h-5 text-blue-400" />
-                      <span className="text-sm">Library</span>
-                      <Badge variant="secondary" className="ml-auto">
-                        {campusStatus.libraryOccupancy}
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Current library occupancy rate</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Next Class */}
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="flex items-center gap-2 text-white">
-                      <Clock className="w-5 h-5 text-purple-400" />
-                      <span className="text-sm">Next Class</span>
-                      <Badge variant="secondary" className="ml-auto">
-                        {campusStatus.nextClass}
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Your next scheduled class</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Alerts */}
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="flex items-center gap-2 text-white">
-                      <AlertCircle className="w-5 h-5 text-yellow-400" />
-                      <span className="text-sm">Alerts</span>
-                      <Badge variant="secondary" className="ml-auto">
-                        {campusStatus.alerts}
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Active campus alerts</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4">
-            {[
-              { label: 'Students', value: '5000+' },
-              { label: 'Faculty', value: '250+' },
-              { label: 'Acres', value: '200+' },
-              { label: 'Partners', value: '100+' },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-white/10 backdrop-blur-md rounded-xl p-1.5 sm:p-2 text-center">
-                <div className="text-base sm:text-lg font-bold text-white">{stat.value}</div>
-                <div className="text-[10px] sm:text-xs text-white/70">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Class Status */}
-          {classData.currentClass && (
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 mt-4">
-              <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="text-white/70 text-sm">Current Class</div>
-                  <div className="text-white">
-                    <div className="text-lg font-semibold">{classData.currentClass.name}</div>
-                    <div className="text-sm">
-                      {classData.currentClass.room} • {classData.currentClass.startTime} - {classData.currentClass.endTime}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/70">Attendance</span>
-                    <span className="text-white">{classData.currentClass.attendance}%</span>
-                  </div>
-                  <Progress 
-                    value={classData.currentClass.attendance} 
-                    className="w-full sm:w-[200px]"
-                  />
-                </div>
-                {classData.nextClass && (
-                  <div className="space-y-2">
-                    <div className="text-white/70 text-sm">Next Class</div>
-                    <div className="text-white">
-                      <div className="text-lg font-semibold">{classData.nextClass.name}</div>
-                      <div className="text-sm">
-                        {classData.nextClass.room} • In {classData.nextClass.timeUntil}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

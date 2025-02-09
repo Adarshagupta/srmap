@@ -1,24 +1,29 @@
-const CACHE_NAME = 'srmap-v1';
+const CACHE_NAME = 'srmap-cache-v1';
 
-// Add the URLs you want to cache
+// Add URLs that you want to cache
 const urlsToCache = [
   '/',
-  '/mess',
-  '/events',
-  '/discover',
-  '/profile',
   '/offline',
-  '/manifest.json',
-  '/icons/android/android-launchericon-192-192.png',
-  '/icons/android/android-launchericon-512-512.png',
+  '/icons/icon-72x72.png',
+  '/icons/icon-96x96.png',
+  '/icons/icon-128x128.png',
+  '/icons/icon-144x144.png',
+  '/icons/icon-152x152.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-384x384.png',
+  '/icons/icon-512x512.png',
+  'https://srmap.edu.in/wp-content/uploads/2019/11/SRMAP-Logo-2.png',
+  'https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=2086&auto=format&fit=crop'
 ];
 
 // Install event - cache the essential files
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
-      .then(() => self.skipWaiting())
+      .then((cache) => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
@@ -33,56 +38,52 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    })
   );
 });
 
-// Advanced fetch event with network-first strategy for API calls and cache-first for static assets
+// Fetch event - serve from cache, then network
 self.addEventListener('fetch', (event) => {
-  // Skip cross-origin requests
-  if (!event.request.url.startsWith(self.location.origin)) return;
-
-  // API calls - Network first, then cache
-  if (event.request.url.includes('/api/')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => cache.put(event.request, responseClone));
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  // Static assets - Cache first, then network
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
+        // Cache hit - return response
         if (response) {
           return response;
         }
 
-        return fetch(event.request).then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+        // Clone the request because it's a stream and can only be consumed once
+        const fetchRequest = event.request.clone();
+
+        return fetch(fetchRequest)
+          .then((response) => {
+            // Check if we received a valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clone the response because it's a stream and can only be consumed once
+            const responseToCache = response.clone();
+
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                // Don't cache if the URL contains certain patterns
+                if (!event.request.url.includes('chrome-extension') &&
+                    !event.request.url.includes('firebase') &&
+                    !event.request.url.includes('socket')) {
+                  cache.put(event.request, responseToCache);
+                }
+              });
+
             return response;
-          }
-
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => cache.put(event.request, responseToCache));
-
-          return response;
-        });
-      })
-      .catch(() => {
-        // If both cache and network fail, show offline page
-        if (event.request.mode === 'navigate') {
-          return caches.match('/offline');
-        }
+          })
+          .catch(() => {
+            // If the network fails, try to return the offline page for navigation requests
+            if (event.request.mode === 'navigate') {
+              return caches.match('/offline');
+            }
+            return null;
+          });
       })
   );
 });
