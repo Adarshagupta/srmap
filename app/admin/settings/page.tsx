@@ -74,7 +74,16 @@ export default function SettingsPage() {
         setSettings(snapshot.data() as Settings);
       } else {
         // Initialize with default settings if none exist
-        await updateDoc(settingsRef, DEFAULT_SETTINGS);
+        await updateDoc(settingsRef, {
+          allowRegistration: DEFAULT_SETTINGS.allowRegistration,
+          requireEmailVerification: DEFAULT_SETTINGS.requireEmailVerification,
+          maxLoginAttempts: DEFAULT_SETTINGS.maxLoginAttempts,
+          sessionTimeout: DEFAULT_SETTINGS.sessionTimeout,
+          notificationSettings: DEFAULT_SETTINGS.notificationSettings,
+          maintenanceMode: DEFAULT_SETTINGS.maintenanceMode,
+          maintenanceMessage: DEFAULT_SETTINGS.maintenanceMessage,
+          theme: DEFAULT_SETTINGS.theme
+        });
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -92,7 +101,16 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const settingsRef = doc(db, 'settings', 'app-settings');
-      await updateDoc(settingsRef, settings);
+      await updateDoc(settingsRef, {
+        allowRegistration: settings.allowRegistration,
+        requireEmailVerification: settings.requireEmailVerification,
+        maxLoginAttempts: settings.maxLoginAttempts,
+        sessionTimeout: settings.sessionTimeout,
+        notificationSettings: settings.notificationSettings,
+        maintenanceMode: settings.maintenanceMode,
+        maintenanceMessage: settings.maintenanceMessage,
+        theme: settings.theme
+      });
       
       toast({
         title: "Success",

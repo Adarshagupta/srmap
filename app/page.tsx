@@ -215,7 +215,7 @@ export default function Home() {
     const timer = setInterval(() => {
       const now = new Date();
       setCurrentTime(now);
-      
+
       // Update all schedule items' status
       setTodaySchedule(prev => prev.map(item => ({
         ...item,
@@ -234,7 +234,7 @@ export default function Home() {
     const conditions: WeatherData['condition'][] = ['sunny', 'cloudy', 'rainy', 'stormy', 'snowy', 'drizzle'];
     const randomCondition = conditions[Math.floor(Math.random() * conditions.length)];
     const newTemp = Math.floor(25 + Math.random() * 10);
-    
+
     setWeather(prev => ({
       ...prev,
       temp: newTemp,
@@ -249,7 +249,7 @@ export default function Home() {
     const hour = now.getHours();
     const minutes = now.getMinutes();
     const currentTime = hour * 60 + minutes;
-    
+
     // Example: Update attendance for current class
     if (classData.currentClass) {
       const newAttendance = Math.min(100, classData.currentClass.attendance + Math.floor(Math.random() * 5));
@@ -352,110 +352,7 @@ export default function Home() {
   return (
     <div className="space-y-6">
       {/* Mobile Daily Timeline */}
-      <div className="md:hidden">
-        <div className="px-4 py-2">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold">Today's Schedule</h2>
-              <p className="text-sm text-muted-foreground">
-                {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold">
-                {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {weather.temp}°C • {weather.condition}
-              </div>
-            </div>
-          </div>
-
-          {/* Horizontally Scrollable Timeline */}
-          <div className="overflow-x-auto pb-2 -mx-4 px-4 hide-scrollbar">
-            <div className="flex gap-3 min-w-max">
-              {todaySchedule.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleItemClick(item)}
-                  className="text-left w-[250px] h-[60px] shrink-0"
-                >
-                  <div 
-                    className={[
-                      "relative flex items-start gap-4 p-2.5 rounded-xl backdrop-blur-md transition-colors duration-200 border border-border/50 h-full",
-                      item.status === 'current' 
-                        ? "bg-primary/5 border-primary" 
-                        : item.status === 'completed'
-                        ? "bg-white/5 opacity-60"
-                        : "bg-white/5 hover:border-primary/50",
-                    ].filter(Boolean).join(" ")}
-                  >
-                    {/* Time Column */}
-                    <div className="min-w-[48px] text-center relative">
-                      <div className="text-sm font-medium">{item.time}</div>
-                      {item.status === 'completed' && (
-                        <CheckCircle2 className="w-4 h-4 mx-auto mt-1 text-green-500" />
-                      )}
-                      {item.status === 'current' && (
-                        <>
-                          <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                          <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
-                          <CircleDot className="w-4 h-4 mx-auto mt-1 text-primary" />
-                        </>
-                      )}
-                    </div>
-
-                    {/* Content Column */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-3">
-                        <div className={[
-                          "p-1.5 rounded-lg shrink-0",
-                          getItemColor(item.type),
-                          item.status === 'current' ? "animate-pulse" : ""
-                        ].filter(Boolean).join(" ")}>
-                          {React.createElement(getItemIcon(item.type), { 
-                            className: [
-                              "w-4 h-4",
-                              item.status === 'current' ? "text-primary" : ""
-                            ].filter(Boolean).join(" ")
-                          })}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className={[
-                            "text-sm font-medium line-clamp-2",
-                            item.status === 'current' ? "text-primary" : ""
-                          ].filter(Boolean).join(" ")}>
-                            {item.title}
-                          </div>
-                          {item.location && (
-                            <div className="text-xs text-muted-foreground truncate mt-0.5">
-                              {item.location}
-                            </div>
-                          )}
-                        </div>
-                        {item.status === 'upcoming' && (
-                          <ChevronRight className="w-4 h-4 ml-auto text-muted-foreground shrink-0" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Hide scrollbar styles */}
-          <style jsx global>{`
-            .hide-scrollbar {
-              -ms-overflow-style: none;
-              scrollbar-width: none;
-            }
-            .hide-scrollbar::-webkit-scrollbar {
-              display: none;
-            }
-          `}</style>
-        </div>
-      </div>
+      {/* Removing Today's Schedule section */}
 
       {/* Full Banner (hidden on small screens) */}
       <div className="hidden md:block relative h-[180px] sm:h-[200px] md:h-[220px] lg:h-[250px] xl:h-[280px] rounded-2xl overflow-hidden">
@@ -469,7 +366,7 @@ export default function Home() {
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/70 to-transparent" />
-          
+
           {/* Decorative Elements */}
           <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-background/20 to-transparent" />
           <div className="absolute top-1/2 right-0 w-32 lg:w-48 h-32 lg:h-48 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -540,8 +437,8 @@ export default function Home() {
               </h2>
               <p className="text-muted-foreground">Check what's cooking in the mess</p>
             </div>
-            <Link 
-              href="/mess" 
+            <Link
+              href="/mess"
               className="text-sm text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-400 transition-colors hover:underline"
             >
               View all
@@ -549,6 +446,27 @@ export default function Home() {
           </div>
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-500/5 dark:to-emerald-500/5 rounded-2xl p-0.5">
             <CurrentMeal />
+          </div>
+        </div>
+
+        {/* Join a Team Section - Compact Design */}
+        <div className="lg:col-span-2">
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200">
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-full">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">Join Our Team</h3>
+                </div>
+              </div>
+              <Link href="/apply/team">
+                <Button className="bg-white text-purple-600 hover:bg-purple-50 font-medium">
+                  Apply Now
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -563,8 +481,8 @@ export default function Home() {
                 </h2>
                 <p className="text-muted-foreground">Stay updated with campus activities</p>
               </div>
-              <Link 
-                href="/events" 
+              <Link
+                href="/events"
                 className="text-sm text-primary hover:text-blue-600 transition-colors hover:underline"
               >
                 View all
@@ -582,8 +500,8 @@ export default function Home() {
                 </h2>
                 <p className="text-muted-foreground">Latest additions to our question bank</p>
               </div>
-              <Link 
-                href="/question-papers" 
+              <Link
+                href="/question-papers"
                 className="text-sm text-pink-600 hover:text-rose-600 transition-colors hover:underline"
               >
                 View all
@@ -600,28 +518,26 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Featured Users Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              People You May Know
-            </h2>
-            <p className="text-muted-foreground">Connect with your college community</p>
-          </div>
-          <Link 
-            href="/discover" 
-            className="text-sm text-purple-600 hover:text-pink-600 transition-colors hover:underline"
-          >
-            View all
-          </Link>
-        </div>
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-500/5 dark:to-pink-500/5 rounded-2xl p-0.5">
-          <div className="bg-background rounded-2xl">
-            <div className="p-6">
-              <FeaturedUsers />
+      {/* Featured Users Section - Compact Design */}
+      <div>
+        <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl overflow-hidden mb-4">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-full">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="font-semibold text-white">People You May Know</h3>
             </div>
+            <Link
+              href="/discover"
+              className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-full transition-colors"
+            >
+              View all
+            </Link>
           </div>
+        </div>
+        <div className="bg-gradient-to-br from-amber-100/50 to-orange-100/50 dark:from-amber-500/5 dark:to-orange-500/5 rounded-xl p-3">
+          <FeaturedUsers />
         </div>
       </div>
 
@@ -644,6 +560,29 @@ export default function Home() {
             </div>
           </Link>
         ))}
+      </div>
+
+      {/* Moderator Recruitment Banner */}
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-pink-500/10">
+        <div className="absolute inset-0 bg-grid-white/10" />
+        <div className="relative p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">
+              Become a Moderator
+            </h2>
+            <p className="text-muted-foreground max-w-[500px]">
+              Help us maintain and improve the community by joining our moderation team. Make a difference in your campus community.
+            </p>
+          </div>
+          <Link href="/apply/moderator" className="w-full sm:w-auto">
+            <Button
+              className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/20"
+              size="lg"
+            >
+              Apply Now
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* AI Assistant */}
