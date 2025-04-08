@@ -462,11 +462,11 @@ export default function Home() {
                   <h3 className="font-semibold text-white">Join Our Team</h3>
                 </div>
               </div>
-              <Link href="/apply/team">
+              <a href="mailto:adarsh_kishor@srmap.edu.in?subject=Application to Join the Team&body=Hi Adarsh,%0A%0AI'm interested in joining the team. I would like to contribute to the platform.%0A%0ARegards,%0A[Your Name]">
                 <Button className="bg-white text-purple-600 hover:bg-purple-50 font-medium">
                   Apply Now
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -575,14 +575,17 @@ export default function Home() {
               Help us maintain and improve the community by joining our moderation team. Make a difference in your campus community.
             </p>
           </div>
-          <Link href="/apply/moderator" className="w-full sm:w-auto">
+          <a
+            href="mailto:adarsh_kishor@srmap.edu.in?subject=Application for Moderator Position&body=Hi Adarsh,%0A%0AI'm interested in becoming a moderator. I would like to help maintain and improve the community.%0A%0ARegards,%0A[Your Name]"
+            className="w-full sm:w-auto"
+          >
             <Button
               className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/20"
               size="lg"
             >
               Apply Now
             </Button>
-          </Link>
+          </a>
         </div>
       </div>
 
