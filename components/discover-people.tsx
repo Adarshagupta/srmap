@@ -6,14 +6,14 @@ import { db } from '@/lib/firebase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  UserCircle, 
-  MapPin, 
-  BookOpen, 
-  Mail, 
-  Calendar, 
-  GraduationCap, 
-  Hash, 
+import {
+  UserCircle,
+  MapPin,
+  BookOpen,
+  Mail,
+  Calendar,
+  GraduationCap,
+  Hash,
   Link as LinkIcon,
   UserPlus,
   UserMinus,
@@ -47,11 +47,12 @@ interface DiscoverPeopleProps {
     year: string;
     batch: string;
   };
+  view?: 'grid' | 'list';
 }
 
 function ConnectionButton({ personId }: { personId: string }) {
   const { user } = useAuth();
-  const { 
+  const {
     connectionStatus,
     loading: connectionLoading,
     connections,
@@ -127,7 +128,7 @@ function ConnectionButton({ personId }: { personId: string }) {
   }
 }
 
-export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
+export default function DiscoverPeople({ filters, view = 'grid' }: DiscoverPeopleProps) {
   const { user } = useAuth();
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,7 +155,7 @@ export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
 
         const q = query(collection(db, 'users'), ...constraints);
 
-        const unsubscribe = onSnapshot(q, 
+        const unsubscribe = onSnapshot(q,
           (snapshot) => {
             let peopleData = snapshot.docs.map(doc => ({
               id: doc.id,
@@ -164,7 +165,7 @@ export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
             // Client-side search filtering
             if (filters.search) {
               const searchLower = filters.search.toLowerCase();
-              peopleData = peopleData.filter(person => 
+              peopleData = peopleData.filter(person =>
                 person.name.toLowerCase().includes(searchLower) ||
                 person.regNumber.toLowerCase().includes(searchLower)
               );
@@ -205,7 +206,7 @@ export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
     return (
       <div className="text-center p-4">
         <p className="text-destructive mb-4">{error}</p>
-        <Button 
+        <Button
           onClick={() => window.location.reload()}
           variant="outline"
         >
@@ -247,72 +248,138 @@ export default function DiscoverPeople({ filters }: DiscoverPeopleProps) {
     );
   }
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {people.map((person) => (
-        <Card key={person.id} className="p-6 hover:shadow-lg transition-all duration-200">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-12 h-12">
-                <AvatarImage src={person.avatar} alt={person.name} />
-                <AvatarFallback>
-                  {person.name.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h3 className="font-semibold">{person.name}</h3>
-                <p className="text-sm text-muted-foreground">{person.year} • {person.batch} Batch</p>
+  if (view === 'grid') {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {people.map((person) => (
+          <Card key={person.id} className="overflow-hidden hover:shadow-lg transition-all duration-200 group">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="w-12 h-12 border-2 border-background group-hover:border-primary/10 transition-all">
+                  <AvatarImage src={person.avatar} alt={person.name} />
+                  <AvatarFallback className="bg-amber-100 text-amber-800">
+                    {person.name.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-semibold group-hover:text-primary transition-colors">{person.name}</h3>
+                  <p className="text-sm text-muted-foreground">{person.year} • {person.batch} Batch</p>
+                </div>
               </div>
-            </div>
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Hash className="w-4 h-4" />
-                <span>{person.regNumber}</span>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <GraduationCap className="w-4 h-4" />
-                <span>{person.department}</span>
-              </div>
-            </div>
 
-            {person.bio && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {person.bio}
-              </p>
-            )}
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Hash className="w-4 h-4" />
+                  <span>{person.regNumber}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <GraduationCap className="w-4 h-4" />
+                  <span>{person.department}</span>
+                </div>
+              </div>
+
+              {person.bio && (
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {person.bio}
+                </p>
+              )}
+
+              {person.interests && person.interests.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {person.interests.slice(0, 3).map((interest, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
+                    >
+                      {interest}
+                    </span>
+                  ))}
+                  {person.interests.length > 3 && (
+                    <span className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
+                      +{person.interests.length - 3} more
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  asChild
+                >
+                  <Link href={`/profile/${person.id}`}>
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                    View Profile
+                  </Link>
+                </Button>
+                <ConnectionButton personId={person.id} />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  // List view
+  return (
+    <div className="space-y-4">
+      {people.map((person) => (
+        <Card key={person.id} className="overflow-hidden hover:shadow-md transition-all duration-200 group">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <Avatar className="w-10 h-10 border-2 border-background group-hover:border-primary/10 transition-all">
+                  <AvatarImage src={person.avatar} alt={person.name} />
+                  <AvatarFallback className="bg-amber-100 text-amber-800">
+                    {person.name.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold truncate group-hover:text-primary transition-colors">{person.name}</h3>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                    <span>{person.department}</span>
+                    <span className="h-1 w-1 rounded-full bg-muted-foreground"></span>
+                    <span>{person.year} • {person.batch}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                >
+                  <Link href={`/profile/${person.id}`}>
+                    <LinkIcon className="w-3.5 h-3.5 mr-1.5" />
+                    Profile
+                  </Link>
+                </Button>
+                <div className="h-8">
+                  <ConnectionButton personId={person.id} />
+                </div>
+              </div>
+            </div>
 
             {person.interests && person.interests.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {person.interests.slice(0, 3).map((interest, index) => (
+              <div className="flex flex-wrap gap-1 mt-3">
+                {person.interests.slice(0, 5).map((interest, index) => (
                   <span
                     key={index}
-                    className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary"
+                    className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary"
                   >
                     {interest}
                   </span>
                 ))}
-                {person.interests.length > 3 && (
-                  <span className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
-                    +{person.interests.length - 3} more
+                {person.interests.length > 5 && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
+                    +{person.interests.length - 5} more
                   </span>
                 )}
               </div>
             )}
-
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                asChild
-              >
-                <Link href={`/profile/${person.id}`}>
-                  <LinkIcon className="w-4 h-4 mr-2" />
-                  View Profile
-                </Link>
-              </Button>
-              <ConnectionButton personId={person.id} />
-            </div>
           </div>
         </Card>
       ))}
