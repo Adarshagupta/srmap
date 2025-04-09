@@ -7,7 +7,7 @@ import FeaturedUsers from '@/components/featured-users';
 import { CurrentMeal } from '@/components/current-meal';
 import { AskSrmAi } from '@/components/ask-srm-ai';
 import { RecentPapers } from '@/components/recent-papers';
-import { BookOpen, Calendar, MapPin, Utensils, Users, User, Bell, Trophy, Newspaper, FileText, Code2, Wifi, Bus, Coffee, Clock, AlertCircle, Cloud, Sun, CloudRain, CloudLightning, CloudSnow, CloudDrizzle, ThermometerSun, Wind, CheckCircle2, CircleDot, ChevronRight } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, Utensils, Users, User, Bell, Trophy, Newspaper, FileText, Code2, Wifi, Bus, Coffee, Clock, AlertCircle, Cloud, Sun, CloudRain, CloudLightning, CloudSnow, CloudDrizzle, ThermometerSun, Wind, CheckCircle2, CircleDot, ChevronRight, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -425,6 +425,45 @@ export default function Home() {
             </div>
           </Link>
         ))}
+      </div>
+
+      {/* Internship Section */}
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 my-6">
+        <div className="absolute inset-0 bg-grid-white/10" />
+        <div className="relative p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-3 text-center md:text-left">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Campus Internship Opportunities
+              </h2>
+              <p className="text-muted-foreground max-w-2xl">
+                Gain valuable work experience, develop professional skills, and build your network right here on campus.
+              </p>
+              <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Briefcase className="h-4 w-4 mr-1.5 text-blue-500" />
+                  Multiple Positions
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4 mr-1.5 text-indigo-500" />
+                  On Campus & Remote
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4 mr-1.5 text-purple-500" />
+                  Flexible Duration
+                </div>
+              </div>
+            </div>
+            <Link href="/internships" className="w-full md:w-auto">
+              <Button
+                className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/20"
+                size="lg"
+              >
+                View Opportunities
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Current Meal, Events, and Papers Section */}
