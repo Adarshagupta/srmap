@@ -22,7 +22,7 @@ export default function BottomNav() {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
       <nav className="border-t bg-background/95 backdrop-blur-xl shadow-lg">
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-5 h-14">
           {navigationLinks.slice(0, 5).map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href;
             return (
@@ -30,19 +30,19 @@ export default function BottomNav() {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex flex-col items-center justify-center transition-colors",
+                  "flex items-center justify-center transition-colors",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
+                aria-label={label}
               >
                 <div className={cn(
-                  "flex items-center justify-center w-10 h-10 rounded-full mb-0.5",
+                  "flex items-center justify-center w-10 h-10 rounded-full",
                   isActive ? "bg-primary/10" : ""
                 )}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-xs font-medium">{label}</span>
               </Link>
             );
           })}

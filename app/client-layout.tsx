@@ -58,9 +58,9 @@ export default function ClientLayout({
       disableTransitionOnChange
     >
       <AuthProvider>
-        <div className="min-h-screen bg-background antialiased pb-16 md:pb-0">
+        <div className="min-h-screen bg-background antialiased pb-14 md:pb-0">
           <Navbar />
-          <main className="flex-1 container mx-auto px-4 py-2 pb-20 md:pb-6">
+          <main className="flex-1 container mx-auto px-4 py-2 pb-16 md:pb-6">
             {children}
           </main>
           <BottomNav />
