@@ -4,6 +4,7 @@ import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { useAuth } from '@/components/auth-provider';
 import { redirect } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { AdminSidebar } from '@/components/admin-sidebar';
 
 // List of admin emails
 const ADMIN_EMAILS = ['admin@srmap.edu.in'];
@@ -28,5 +29,14 @@ export default function AdminLayout({
     redirect('/');
   }
 
-  return <>{children}</>;
+  return (
+    <div className="flex min-h-screen bg-background">
+      <AdminSidebar />
+      <div className="flex-1 md:pl-64">
+        <main className="py-6">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
 }

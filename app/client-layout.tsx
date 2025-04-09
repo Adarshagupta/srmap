@@ -5,12 +5,10 @@ import Navbar from '@/components/navbar';
 import BottomNav from '@/components/bottom-nav';
 import { OfflineBanner } from '@/components/offline-banner';
 import { PWAPrompt } from '@/components/pwa-prompt';
-import { MobileNav } from '@/components/mobile-nav';
 import { AuthProvider } from '@/components/auth-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 export default function ClientLayout({
   children,
@@ -68,7 +66,6 @@ export default function ClientLayout({
           <BottomNav />
           <OfflineBanner />
           <PWAPrompt />
-          <MobileNav />
           <Toaster />
           {showInstallPrompt && (
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t flex items-center justify-between">
@@ -86,4 +83,4 @@ export default function ClientLayout({
       </AuthProvider>
     </ThemeProvider>
   );
-} 
+}

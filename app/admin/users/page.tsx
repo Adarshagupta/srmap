@@ -147,16 +147,16 @@ export default function UsersPage() {
     const csvContent = [
       ['Name', 'Email', 'Registration Number', 'Department', 'Year', 'Batch', 'Role', 'Status', 'Created At', 'Last Login'],
       ...users.map(user => [
-        user.name,
-        user.email,
-        user.registrationNumber,
-        user.department,
-        user.year,
-        user.batch,
-        user.role,
+        user.name || '',
+        user.email || '',
+        user.registrationNumber || '',
+        user.department || '',
+        user.year || '',
+        user.batch || '',
+        user.role || 'user',
         user.isActive ? 'Active' : 'Inactive',
-        format(user.createdAt.toDate(), 'PPP'),
-        user.lastLogin ? format(user.lastLogin.toDate(), 'PPP') : '-'
+        user.createdAt && typeof user.createdAt.toDate === 'function' ? format(user.createdAt.toDate(), 'PPP') : '',
+        user.lastLogin && typeof user.lastLogin.toDate === 'function' ? format(user.lastLogin.toDate(), 'PPP') : '-'
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -168,16 +168,21 @@ export default function UsersPage() {
   }
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.registrationNumber.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesDepartment = departmentFilter === 'all' || user.department === departmentFilter;
-    const matchesYear = yearFilter === 'all' || user.year === yearFilter;
-    const matchesBatch = batchFilter === 'all' || user.batch === batchFilter;
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    // Add null checks for all properties to prevent errors
+    const matchesSearch =
+      (user.name ? user.name.toLowerCase().includes(searchQuery.toLowerCase()) : false) ||
+      (user.email ? user.email.toLowerCase().includes(searchQuery.toLowerCase()) : false) ||
+      (user.registrationNumber ? user.registrationNumber.toLowerCase().includes(searchQuery.toLowerCase()) : false);
 
-    return matchesSearch && matchesDepartment && matchesYear && matchesBatch && matchesRole;
+    // If search query is empty, don't filter by search
+    const searchMatches = searchQuery === '' ? true : matchesSearch;
+
+    const matchesDepartment = departmentFilter === 'all' || (user.department && user.department === departmentFilter);
+    const matchesYear = yearFilter === 'all' || (user.year && user.year === yearFilter);
+    const matchesBatch = batchFilter === 'all' || (user.batch && user.batch === batchFilter);
+    const matchesRole = roleFilter === 'all' || (user.role && user.role === roleFilter);
+
+    return searchMatches && matchesDepartment && matchesYear && matchesBatch && matchesRole;
   });
 
   if (loading) {
@@ -294,15 +299,15 @@ export default function UsersPage() {
             <TableBody>
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.registrationNumber}</TableCell>
-                  <TableCell>{user.department}</TableCell>
-                  <TableCell>Year {user.year}</TableCell>
-                  <TableCell>{user.batch}</TableCell>
+                  <TableCell>{user.name || '-'}</TableCell>
+                  <TableCell>{user.email || '-'}</TableCell>
+                  <TableCell>{user.registrationNumber || '-'}</TableCell>
+                  <TableCell>{user.department || '-'}</TableCell>
+                  <TableCell>{user.year ? `Year ${user.year}` : '-'}</TableCell>
+                  <TableCell>{user.batch || '-'}</TableCell>
                   <TableCell>
                     <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                      {user.role}
+                      {user.role || 'user'}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -311,7 +316,7 @@ export default function UsersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {user.lastLogin ? format(user.lastLogin.toDate(), 'PPP') : '-'}
+                    {user.lastLogin && typeof user.lastLogin.toDate === 'function' ? format(user.lastLogin.toDate(), 'PPP') : '-'}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -543,4 +548,4 @@ export default function UsersPage() {
       </Dialog>
     </div>
   );
-} 
+}

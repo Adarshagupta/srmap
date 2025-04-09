@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null &&
+        (request.auth.token.email.matches('.*@srmap\\.edu\\.in$') ||
+         request.auth.token.email == 'admin@srmap.in');
+    }
+
+    // Helper function to check if user is a participant
+    function isParticipant(participants) {
+      return request.auth != null &&
+             request.auth.uid in participants;
+    }
+
+    // Public collections that anyone can read
+    match /mess-menus/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /events/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /buildings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Question Papers - new collection
+    match /questionPapers/{paperId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // User profiles - users can read all profiles but only edit their own
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if request.auth != null &&
+                   request.auth.uid == userId;
+      allow update: if request.auth != null &&
+                   request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // Connections - users can manage their own connections
+    match /connections/{connectionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.participants.hasAll([request.auth.uid]) &&
+        request.resource.data.status == 'pending';
+      allow update: if request.auth != null &&
+        resource.data.participants.hasAll([request.auth.uid]) &&
+        request.resource.data.participants == resource.data.participants;
+      allow delete: if request.auth != null &&
+        resource.data.participants.hasAll([request.auth.uid]);
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null &&
+        (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow delete: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    // Posts - users can read all posts but only edit their own
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.authorId == request.auth.uid;
+      allow update: if request.auth != null && (
+        (resource.data.authorId == request.auth.uid || isAdmin()) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likes']))
+      );
+      allow delete: if request.auth != null &&
+        (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // Comments on posts
+    match /posts/{postId}/comments/{commentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.resource.data.authorId == request.auth.uid;
+      allow update: if request.auth != null &&
+        resource.data.authorId == request.auth.uid;
+      allow delete: if request.auth != null &&
+        (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // Hackathons - new collection
+    match /hackathons/{hackathonId} {
+      allow read: if true; // Anyone can read hackathon details
+      allow write: if isAdmin(); // Only admins can create, update, delete hackathons
+
+      // Hackathon participants subcollection
+      match /participants/{userId} {
+        allow read: if true; // Anyone can see who's participating
+        allow create, update: if request.auth != null && request.auth.uid == userId; // Users can register themselves
+        allow delete: if request.auth != null && (request.auth.uid == userId || isAdmin()); // Users can unregister or admins can remove
+      }
+    }
+
+    // Internships - new collection
+    match /internships/{internshipId} {
+      allow read: if true; // Anyone can read internship listings
+      allow write: if isAdmin(); // Only admins can create, update, delete internships
+
+      // Internship applications subcollection
+      match /applications/{applicationId} {
+        allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        allow update: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+        allow delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

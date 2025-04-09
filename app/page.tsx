@@ -7,7 +7,8 @@ import FeaturedUsers from '@/components/featured-users';
 import { CurrentMeal } from '@/components/current-meal';
 import { AskSrmAi } from '@/components/ask-srm-ai';
 import { RecentPapers } from '@/components/recent-papers';
-import { BookOpen, Calendar, MapPin, Utensils, Users, User, Bell, Trophy, Newspaper, FileText, Code2, Wifi, Bus, Coffee, Clock, AlertCircle, Cloud, Sun, CloudRain, CloudLightning, CloudSnow, CloudDrizzle, ThermometerSun, Wind, CheckCircle2, CircleDot, ChevronRight, Briefcase } from 'lucide-react';
+import { UpcomingHackathons } from '@/components/upcoming-hackathons';
+import { BookOpen, Calendar, MapPin, Utensils, Users, User, Bell, Trophy, Newspaper, FileText, Code2, Code, Wifi, Bus, Coffee, Clock, AlertCircle, Cloud, Sun, CloudRain, CloudLightning, CloudSnow, CloudDrizzle, ThermometerSun, Wind, CheckCircle2, CircleDot, ChevronRight, Briefcase, Rocket, Zap } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const QuickLinks = [
   {
@@ -427,6 +429,8 @@ export default function Home() {
         ))}
       </div>
 
+
+
       {/* Internship Section */}
       <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 my-6">
         <div className="absolute inset-0 bg-grid-white/10" />
@@ -489,70 +493,64 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Join a Team Section - Compact Design */}
-        <div className="lg:col-span-2">
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl overflow-hidden hover:shadow-md transition-all duration-200">
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2 rounded-full">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">Join Our Team</h3>
-                </div>
-              </div>
-              <a href="mailto:adarsh_kishor@srmap.edu.in?subject=Application to Join the Team&body=Hi Adarsh,%0A%0AI'm interested in joining the team. I would like to contribute to the platform.%0A%0ARegards,%0A[Your Name]">
-                <Button className="bg-white text-purple-600 hover:bg-purple-50 font-medium">
-                  Apply Now
-                </Button>
-              </a>
-            </div>
-          </div>
+        {/* Hackathon Section - Redesigned */}
+        <div className="lg:col-span-3">
+          <UpcomingHackathons expanded={true} />
         </div>
 
-        {/* Events and Papers Section - Takes up 3 columns */}
+        {/* Combined Events and Papers Section - Takes up 3 columns */}
         <div className="lg:col-span-3 space-y-4">
-          {/* Events Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-                  Upcoming Events
-                </h2>
-                <p className="text-muted-foreground">Stay updated with campus activities</p>
-              </div>
-              <Link
-                href="/events"
-                className="text-sm text-primary hover:text-blue-600 transition-colors hover:underline"
-              >
-                View all
-              </Link>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-rose-600 bg-clip-text text-transparent">
+                Campus Resources
+              </h2>
+              <p className="text-muted-foreground">Stay updated with campus activities and resources</p>
             </div>
-            <UpcomingEvents />
           </div>
 
-          {/* Question Papers Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                  Recent Question Papers
-                </h2>
-                <p className="text-muted-foreground">Latest additions to our question bank</p>
-              </div>
-              <Link
-                href="/question-papers"
-                className="text-sm text-pink-600 hover:text-rose-600 transition-colors hover:underline"
-              >
-                View all
-              </Link>
-            </div>
-            <div className="bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-500/5 dark:to-rose-500/5 rounded-2xl p-0.5">
-              <div className="bg-background rounded-2xl">
-                <div className="p-4">
-                  <RecentPapers />
+          <div className="bg-gradient-to-br from-blue-50 to-rose-50 dark:from-blue-500/5 dark:to-rose-500/5 rounded-2xl p-0.5">
+            <div className="bg-background rounded-2xl">
+              <Tabs defaultValue="events" className="w-full">
+                <div className="px-4 pt-4">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="events" className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Upcoming Events
+                    </TabsTrigger>
+                    <TabsTrigger value="papers" className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Question Papers
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
-              </div>
+
+                <TabsContent value="events" className="p-4 pt-2">
+                  <div className="flex justify-end mb-2">
+                    <Link
+                      href="/events"
+                      className="text-xs text-primary hover:text-blue-600 transition-colors hover:underline flex items-center gap-1"
+                    >
+                      View all events
+                      <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                  <UpcomingEvents />
+                </TabsContent>
+
+                <TabsContent value="papers" className="p-4 pt-2">
+                  <div className="flex justify-end mb-2">
+                    <Link
+                      href="/question-papers"
+                      className="text-xs text-pink-600 hover:text-rose-600 transition-colors hover:underline flex items-center gap-1"
+                    >
+                      View all papers
+                      <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                  <RecentPapers />
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </div>
@@ -695,6 +693,17 @@ export default function Home() {
 
       {/* AI Assistant */}
       <AskSrmAi />
+
+      {/* Add custom scrollbar hiding style */}
+      <style jsx global>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 }

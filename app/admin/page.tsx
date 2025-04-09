@@ -37,15 +37,22 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <Shield className="h-6 w-6 text-primary" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Shield className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+            <p className="text-muted-foreground">
+              Manage mess menus, events, hackathons, and more
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage mess menus, events, navigation, and question papers
-          </p>
+        <div className="flex gap-2">
+          <Link href="/admin/hackathons">
+            <Button variant="outline">Manage Hackathons</Button>
+          </Link>
         </div>
       </div>
 
@@ -57,7 +64,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="navigation">Navigation</TabsTrigger>
             <TabsTrigger value="question-papers">Question Papers</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="mess" className="space-y-4">
             <MessMenuEditor />
           </TabsContent>

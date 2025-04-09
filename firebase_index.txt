@@ -1,0 +1,16 @@
+Collection ID	Fields indexed 
+Query scope		Status	
+notifications	userId Ascending createdAt Descending __name__ Descending	Collection		Enabled	
+connections	participants Arrays status Ascending __name__ Ascending	Collection		Enabled	
+connections	connections Ascending participants Arrays __name__ Ascending	Collection		Enabled	
+posts	authorId Ascending createdAt Descending __name__ Descending	Collection		Enabled	
+
+// Indexes for hackathons collection
+{
+  "collectionGroup": "hackathons",
+  "queryScope": "COLLECTION",
+  "fields": [
+    { "fieldPath": "endDate", "order": "ASCENDING" },
+    { "fieldPath": "startDate", "order": "ASCENDING" }
+  ]
+}
